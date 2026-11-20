@@ -1,0 +1,14 @@
+{
+  "name": "París en 4 días",
+  "short_name": "París",
+  "description": "Plan día a día, mapa, transporte y guía práctica para París del 28 de noviembre al 1 de diciembre de 2026.",
+  "lang": "es",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#eceef1",
+  "theme_color": "#1b3f8b",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

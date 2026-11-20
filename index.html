@@ -1,0 +1,953 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>París en 4 días</title>
+<meta name="theme-color" content="#1b3f8b">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* Idea: una app de bolsillo con el lenguaje de la calle parisina. Placas de esmalte azul con marco verde
+   para los títulos, y cada día dibujado como una línea de metro cuyas estaciones se marcan al visitarlas. */
+:root{
+  --bg:#eceef1; --surface:#ffffff; --surface-2:#f4f5f8; --ink:#172033; --muted:#566072; --line:#d7dbe2;
+  --plaque:#1b3f8b; --plaque-edge:#3a7d5c; --on-plaque:#ffffff; --accent:#1b3f8b;
+  --ok:#1f6f4a; --warn:#8f4508; --warn-bg:#fcefdf;
+  --water:#a8c9e6; --park:#cbe0c1; --land:#f8f6f0; --outside:#dfe2e6; --road:#e6e1d4;
+  --d1:#c2255c; --d2:#1971c2; --d3:#2b8a3e; --d4:#b85c00; --on-day:#ffffff;
+  --display:"Bricolage Grotesque","Avenir Next Condensed","Segoe UI",system-ui,sans-serif;
+  --body:"Instrument Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0d121b; --surface:#161d2a; --surface-2:#1d2535; --ink:#e8ecf3; --muted:#9aa5b7; --line:#2b3446;
+    --plaque:#22499c; --plaque-edge:#4f9a76; --on-plaque:#ffffff; --accent:#a3bdff;
+    --ok:#62c698; --warn:#f0b06a; --warn-bg:#33240f;
+    --water:#284a6d; --park:#233f2e; --land:#1b2332; --outside:#111722; --road:#262f40;
+    --d1:#f06595; --d2:#4dabf7; --d3:#51cf66; --d4:#ffa94d; --on-day:#0d121b;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0d121b; --surface:#161d2a; --surface-2:#1d2535; --ink:#e8ecf3; --muted:#9aa5b7; --line:#2b3446;
+  --plaque:#22499c; --plaque-edge:#4f9a76; --on-plaque:#ffffff; --accent:#a3bdff;
+  --ok:#62c698; --warn:#f0b06a; --warn-bg:#33240f;
+  --water:#284a6d; --park:#233f2e; --land:#1b2332; --outside:#111722; --road:#262f40;
+  --d1:#f06595; --d2:#4dabf7; --d3:#51cf66; --d4:#ffa94d; --on-day:#0d121b;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--ink);font:400 15px/1.5 var(--body);-webkit-text-size-adjust:100%}
+h1,h2,h3,h4,p,ul,ol,figure{margin:0}
+ul,ol{padding:0;list-style:none}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer;background:none;border:0;padding:0}
+a{color:var(--accent)}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px;border-radius:6px}
+.app{height:100%;max-width:560px;margin:0 auto;display:flex;flex-direction:column;background:var(--bg);position:relative}
+@media (min-width:600px){.app{border-inline:1px solid var(--line)}}
+
+/* Cabecera */
+.top{display:flex;gap:12px;align-items:center;padding:10px 16px;background:var(--surface);border-bottom:1px solid var(--line)}
+.plaque{background:var(--plaque);color:var(--on-plaque);border:3px solid var(--plaque-edge);border-radius:8px;
+  box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.6);padding:5px 12px 6px;text-align:center;flex:none}
+.plaque small{display:block;font:600 10px/1.2 var(--body);letter-spacing:.14em;opacity:.9}
+.plaque b{display:block;font:800 21px/1 var(--display);letter-spacing:.1em}
+.status{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
+.status strong{font:600 15px/1.2 var(--display)}
+.status span{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.bar{height:5px;border-radius:3px;background:var(--line);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--ok);border-radius:3px;transition:width .3s}
+
+/* Vistas */
+main{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch}
+.view{padding:14px 16px 28px;display:flex;flex-direction:column;gap:14px}
+.view[hidden]{display:none}
+.h2{font:800 20px/1.15 var(--display);text-wrap:balance}
+.h3{font:600 16px/1.25 var(--display);text-wrap:balance}
+.lead{color:var(--muted);font-size:14px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:10px}
+.eyebrow{font:600 11px/1.2 var(--body);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.pill{display:inline-flex;align-items:center;gap:4px;font:600 11px/1 var(--body);padding:4px 7px;border-radius:999px;border:1px solid var(--line);color:var(--muted);white-space:nowrap}
+.pill.ok{color:var(--ok);border-color:currentColor}
+.pill.warn{color:var(--warn);border-color:currentColor}
+.note{background:var(--warn-bg);color:var(--ink);border-left:4px solid var(--warn);border-radius:6px;padding:10px 12px;font-size:14px}
+.note b{color:var(--warn)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:36px;padding:6px 12px;border-radius:9px;border:1px solid var(--line);
+  background:var(--surface-2);font:600 13px/1.1 var(--body);color:var(--ink);text-decoration:none}
+.btn.pri{background:var(--plaque);color:var(--on-plaque);border-color:var(--plaque)}
+.btn svg,.walk svg{width:15px;height:15px;flex:none}
+.acts{display:flex;flex-wrap:wrap;gap:8px}
+
+/* Indicadores de línea */
+.ln{display:inline-grid;place-items:center;min-width:20px;height:20px;padding:0 3px;border-radius:50%;font:700 11px/1 var(--body);vertical-align:-4px;margin-right:2px}
+.ln.rer{border-radius:5px;outline:1.5px solid currentColor;outline-offset:-3px}
+.walk{display:inline-flex;align-items:center;gap:4px}
+
+/* Selector de día */
+.days{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;position:sticky;top:0;z-index:3;background:var(--bg);padding:8px 0;margin:-8px 0}
+.days button{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:7px 2px 6px;display:flex;flex-direction:column;align-items:center;gap:2px;border-bottom:4px solid var(--dc)}
+.days button b{font:600 14px/1.1 var(--display)}
+.days button span{font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
+.days button[aria-pressed="true"]{background:var(--dc);border-color:var(--dc);color:var(--on-day)}
+.days button[aria-pressed="true"] span{color:inherit;opacity:.9}
+
+/* Placa del día */
+.dayplaque{background:var(--plaque);color:var(--on-plaque);border:4px solid var(--plaque-edge);border-radius:10px;
+  box-shadow:inset 0 0 0 2px rgba(255,255,255,.6);padding:14px 16px 15px;display:flex;flex-direction:column;gap:6px}
+.dayplaque .arr{font:600 11px/1.2 var(--body);letter-spacing:.14em;text-transform:uppercase;opacity:.9}
+.dayplaque h2{font:800 23px/1.08 var(--display);letter-spacing:.03em;text-transform:uppercase;text-wrap:balance}
+.dayplaque p{font-size:14px;opacity:.95}
+.facts{display:flex;flex-wrap:wrap;gap:6px}
+
+/* Línea del día: cada parada es una estación */
+.rail{display:flex;flex-direction:column}
+.stop{display:grid;grid-template-columns:34px minmax(0,1fr);column-gap:10px;position:relative;padding-bottom:6px}
+.stop::before{content:"";position:absolute;left:14px;top:0;bottom:0;width:6px;background:var(--dc);border-radius:0}
+.stop:first-child::before{top:22px;border-radius:3px 3px 0 0}
+.stop:last-child::before{bottom:auto;height:36px;border-radius:0 0 3px 3px}
+.stop:first-child:last-child::before{display:none}
+.go{grid-column:2;font-size:13px;color:var(--muted);padding:4px 0 8px;min-height:10px}
+.node{grid-column:1;align-self:start;margin-top:8px;width:34px;height:34px;border-radius:50%;background:var(--surface);border:4px solid var(--dc);
+  display:grid;place-items:center;position:relative;z-index:1}
+.node svg{width:16px;height:16px;opacity:0;color:var(--on-day)}
+.stop.done .node{background:var(--dc)}
+.stop.done .node svg{opacity:1}
+.stop .card{grid-column:2;gap:7px}
+.stop.done .card{background:var(--surface-2)}
+.stop.done .card h3{text-decoration:line-through;text-decoration-thickness:1.5px;color:var(--muted)}
+.row1{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.time{font:800 16px/1 var(--display);font-variant-numeric:tabular-nums}
+.dur{font-size:12px;color:var(--muted)}
+.cost{margin-left:auto}
+.now{background:var(--dc);color:var(--on-day);border-color:var(--dc)}
+.stop p{font-size:14px}
+.tip{color:var(--muted)}
+.tip b{color:var(--ink)}
+
+/* Mapa */
+.chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:7px 12px;font:600 13px/1 var(--body);display:inline-flex;gap:6px;align-items:center}
+.chip i{width:10px;height:10px;border-radius:50%;background:var(--dc)}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.mapwrap{position:relative;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--outside)}
+#map{height:clamp(300px,50vh,480px);touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none}
+#map svg{display:block;width:100%;height:100%}
+#map text{font-family:var(--body)}
+.zoom{position:absolute;right:8px;top:8px;display:flex;flex-direction:column;gap:6px}
+.zoom button{width:36px;height:36px;border-radius:9px;background:var(--surface);border:1px solid var(--line);font:600 20px/1 var(--body);display:grid;place-items:center}
+.zoom button svg{width:18px;height:18px}
+.legend{display:flex;flex-direction:column;gap:6px}
+.legend button{display:flex;align-items:center;gap:10px;text-align:left;width:100%;padding:9px 10px;border-radius:10px;border:1px solid var(--line);background:var(--surface)}
+.legend .num{flex:none;width:24px;height:24px;border-radius:50%;background:var(--dc);color:var(--on-day);display:grid;place-items:center;font:700 12px/1 var(--body)}
+.legend small{display:block;color:var(--muted);font-size:12px}
+.legend b{font-weight:600;font-size:14px}
+
+/* Ficha inferior */
+.sheet{position:absolute;left:0;right:0;bottom:0;z-index:10;background:var(--surface);border-top:1px solid var(--line);border-radius:16px 16px 0 0;
+  box-shadow:0 -10px 30px rgba(0,0,0,.22);padding:14px 16px 18px;display:flex;flex-direction:column;gap:10px;max-height:72%;overflow-y:auto}
+.sheet[hidden]{display:none}
+.sheet header{display:flex;gap:10px;align-items:flex-start}
+.sheet header h3{flex:1}
+.sheet .x{width:34px;height:34px;border-radius:50%;border:1px solid var(--line);display:grid;place-items:center;flex:none}
+.sheet .x svg{width:16px;height:16px}
+.kv{display:grid;grid-template-columns:auto minmax(0,1fr);gap:5px 12px;font-size:14px}
+.kv dt{color:var(--muted)}
+.kv dd{margin:0}
+
+/* Transporte */
+.seg{display:flex;flex-wrap:wrap;gap:6px}
+.seg button{border:1px solid var(--line);background:var(--surface-2);border-radius:9px;padding:8px 10px;font:600 13px/1 var(--body)}
+.seg button[aria-pressed="true"]{background:var(--plaque);color:var(--on-plaque);border-color:var(--plaque)}
+.field{display:flex;flex-direction:column;gap:6px}
+.field>label,.field>span{font:600 13px/1.2 var(--body)}
+.field input[type=text]{border:1px solid var(--line);background:var(--surface-2);border-radius:9px;padding:9px 10px;width:100%}
+.steps{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.stepper{border:1px solid var(--line);border-radius:10px;padding:6px 8px 6px 10px;display:flex;align-items:center;justify-content:space-between;gap:6px;border-left:5px solid var(--dc)}
+.stepper small{font:600 13px/1.1 var(--body)}
+.stepper div{display:flex;align-items:center;gap:4px}
+.stepper output{min-width:18px;text-align:center;font:800 17px/1 var(--display);font-variant-numeric:tabular-nums}
+.stepper button{width:32px;height:32px;border-radius:50%;border:1px solid var(--line);background:var(--surface-2);font:600 17px/1 var(--body)}
+.opts{display:flex;flex-direction:column;gap:8px}
+.opt{border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:6px}
+.opt.best{border-color:var(--ok);border-width:2px}
+.opt .l1{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+.opt .l1 b{font:600 15px/1.2 var(--display)}
+.opt .amt{margin-left:auto;font:800 18px/1 var(--display);font-variant-numeric:tabular-nums}
+.opt p{font-size:13px;color:var(--muted)}
+.opt .bar i{background:var(--muted)}
+.opt.best .bar i{background:var(--ok)}
+.tickets{display:flex;flex-direction:column;gap:0}
+.ticket{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 10px;padding:11px 0;border-top:1px solid var(--line)}
+.ticket:first-child{border-top:0;padding-top:0}
+.ticket:last-child{padding-bottom:0}
+.ticket b{font:600 15px/1.25 var(--display)}
+.ticket .p{font:800 16px/1.2 var(--display);font-variant-numeric:tabular-nums;text-align:right}
+.ticket p{grid-column:1/-1;font-size:13.5px;color:var(--muted)}
+.ticket .pill{justify-self:start;grid-column:1/-1}
+.num-list{counter-reset:n;display:flex;flex-direction:column;gap:10px}
+.num-list li{counter-increment:n;display:grid;grid-template-columns:26px minmax(0,1fr);gap:10px;font-size:14px}
+.num-list li::before{content:counter(n);width:26px;height:26px;border-radius:50%;background:var(--plaque);color:var(--on-plaque);display:grid;place-items:center;font:700 13px/1 var(--body)}
+.bul{display:flex;flex-direction:column;gap:7px;font-size:14px}
+.bul li{padding-left:14px;position:relative}
+.bul li::before{content:"";position:absolute;left:0;top:.62em;width:6px;height:6px;border-radius:50%;background:var(--plaque-edge)}
+.lines{display:flex;flex-direction:column;gap:8px;font-size:14px}
+.lines li{display:grid;grid-template-columns:30px minmax(0,1fr);gap:8px;align-items:start}
+
+/* Guía */
+.tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:11px 12px}
+.tile small{display:block;font-size:12px;color:var(--muted)}
+.tile b{font:800 17px/1.2 var(--display)}
+.tile span{display:block;font-size:12.5px;color:var(--muted);margin-top:2px}
+.tw{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+th,td{text-align:left;padding:8px 10px 8px 0;border-bottom:1px solid var(--line);vertical-align:top}
+th{font:600 11px/1.2 var(--body);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
+td.n{font-variant-numeric:tabular-nums;white-space:nowrap}
+tr:last-child td{border-bottom:0}
+.phr{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:0 12px;font-size:14px}
+.phr div{padding:7px 0;border-bottom:1px solid var(--line)}
+.phr div:nth-last-child(-n+2){border-bottom:0}
+.phr i{display:block;font-style:normal;font-size:12px;color:var(--muted)}
+
+/* Listas */
+.cl{display:flex;flex-direction:column}
+.cl label{display:grid;grid-template-columns:24px minmax(0,1fr);gap:10px;padding:10px 0;border-top:1px solid var(--line);align-items:start;cursor:pointer}
+.cl label:first-child{border-top:0}
+.cl input{appearance:none;-webkit-appearance:none;width:24px;height:24px;border-radius:7px;border:2px solid var(--muted);margin:0;display:grid;place-items:center;background:var(--surface)}
+.cl input:checked{background:var(--ok);border-color:var(--ok)}
+.cl input:checked::after{content:"";width:11px;height:6px;border-left:2.5px solid var(--surface);border-bottom:2.5px solid var(--surface);transform:rotate(-45deg) translate(1px,-1px)}
+.cl input:checked+span b{text-decoration:line-through;color:var(--muted)}
+.cl span b{font-weight:600;display:block}
+.cl span small{color:var(--muted);font-size:13px}
+.cl span a{font-size:13px}
+.ghead{display:flex;align-items:baseline;gap:8px}
+.ghead span{margin-left:auto;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+
+/* Pestañas */
+.tabs{display:grid;grid-template-columns:repeat(5,1fr);background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
+.tabs a{display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 2px 7px;font:600 11px/1 var(--body);color:var(--muted);text-decoration:none;border-top:3px solid transparent;margin-top:-1px}
+.tabs a svg{width:22px;height:22px}
+.tabs a[aria-current="page"]{color:var(--accent);border-top-color:var(--accent)}
+.src{font-size:12px;color:var(--muted)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="plaque" aria-hidden="true"><small>28 NOV · 1 DIC</small><b>PARIS</b></div>
+    <div class="status">
+      <strong id="st-when">París en 4 días</strong>
+      <span id="st-prog">0 de 0 paradas hechas</span>
+      <div class="bar" aria-hidden="true"><i id="st-bar" style="width:0"></i></div>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="view" id="v-plan" aria-label="Plan día a día"></section>
+    <section class="view" id="v-mapa" aria-label="Mapa" hidden>
+      <div class="chips" id="map-chips" role="group" aria-label="Filtrar por día"></div>
+      <div class="mapwrap">
+        <div id="map" role="img" aria-label="Mapa esquemático de París con las paradas del plan"></div>
+        <div class="zoom">
+          <button type="button" data-zoom="in" aria-label="Acercar">+</button>
+          <button type="button" data-zoom="out" aria-label="Alejar">−</button>
+          <button type="button" data-zoom="fit" aria-label="Encuadrar las paradas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+        </div>
+      </div>
+      <p class="src">Mapa esquemático sin conexión: arrastra para moverte, pellizca o usa + y − para acercar. Toca una parada para ver cómo llegar; la navegación paso a paso se abre en Google Maps.</p>
+      <div class="legend" id="map-legend"></div>
+    </section>
+    <section class="view" id="v-transporte" aria-label="Transporte" hidden></section>
+    <section class="view" id="v-guia" aria-label="Guía práctica" hidden></section>
+    <section class="view" id="v-listas" aria-label="Listas" hidden></section>
+  </main>
+
+  <div class="sheet" id="sheet" role="dialog" aria-labelledby="sheet-title" hidden></div>
+
+  <nav class="tabs" aria-label="Secciones">
+    <a href="#plan" data-tab="plan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="5" r="2"/><circle cx="6" cy="19" r="2"/><path d="M6 7v10M11 5h9M11 12h7M11 19h9"/></svg>Plan</a>
+    <a href="#mapa" data-tab="mapa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-6.5-5.6-6.5-10.5a6.5 6.5 0 0 1 13 0C18.500 15.400 12 21 12 21z"/><circle cx="12" cy="10.500" r="2.300"/></svg>Mapa</a>
+    <a href="#transporte" data-tab="transporte"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="14" rx="3"/><path d="M5 11h14M9 21l1.500-4M15 21l-1.500-4M9 14h.01M15 14h.01"/></svg>Transporte</a>
+    <a href="#guia" data-tab="guia"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.500A2.500 2.500 0 0 1 6.500 3H20v15H6.500A2.500 2.500 0 0 0 4 20.500z"/><path d="M4 20.500A2.500 2.500 0 0 0 6.500 23H20v-5M9 8h7"/></svg>Guía</a>
+    <a href="#listas" data-tab="listas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6l1.500 1.500L8 5M4 12l1.500 1.500L8 11M4 18l1.500 1.500L8 17M12 6h8M12 12h8M12 18h8"/></svg>Listas</a>
+  </nav>
+</div>
+
+<script>
+/* ============ Utilidades ============ */
+const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
+const eur=n=>n.toLocaleString('es-ES',{minimumFractionDigits:2,maximumFractionDigits:2})+' €';
+const IC={
+  check:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.500" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.500l4.500 4.500L19 7.500"/></svg>',
+  walk:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13" cy="4.500" r="1.800"/><path d="M9 21l2.500-6-2-3 1-4.500 4 1.500 2 3h2.500M7.500 12.500l3-5M14 21l-.5-5"/></svg>',
+  pin:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-6.500-5.600-6.500-10.500a6.500 6.500 0 0 1 13 0C18.500 15.400 12 21 12 21z"/><circle cx="12" cy="10.500" r="2.300"/></svg>',
+  go:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l18-8-8 18-2-8z"/></svg>',
+  ext:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>',
+  x:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.500" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>'
+};
+/* Colores oficiales de las líneas de metro y RER */
+const LC={1:['#FFCD00','#000'],2:['#003CA6','#fff'],3:['#837902','#fff'],4:['#CF009E','#fff'],5:['#FF7E2E','#000'],6:['#6ECA97','#000'],7:['#FA9ABA','#000'],8:['#E19BDF','#000'],9:['#B6BD00','#000'],10:['#C9910D','#000'],11:['#704B1C','#fff'],12:['#007852','#fff'],13:['#6EC4E8','#000'],14:['#62259D','#fff'],A:['#E2231A','#fff'],B:['#5291CE','#fff'],C:['#FFCE00','#000'],D:['#00814F','#fff']};
+const L=(...ids)=>ids.map(i=>{const c=LC[i],rer=isNaN(i);return `<span class="ln${rer?' rer':''}" style="background:${c[0]};color:${c[1]}" role="img" aria-label="${rer?'RER':'Metro'} ${i}">${i}</span>`}).join('');
+const walk=m=>`<span class="walk">${IC.walk}${m} min a pie</span>`;
+const gm=(dest,mode='transit',origin)=>'https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent(dest)+(origin?'&origin='+encodeURIComponent(origin):'')+'&travelmode='+mode;
+const ext=(href,label,cls='')=>`<a class="btn ${cls}" href="${href}" target="_blank" rel="noopener">${label}${IC.ext}</a>`;
+
+/* ============ Tarifas 2026 (Île-de-France Mobilités, desde el 1 de enero de 2026) ============ */
+const F={metro:2.55,bus:2.05,busBord:2.50,airport:14,jour:12.30,easy:2,semaine:32.40,pv:{1:30.60,2:45.40,3:63.80,5:78},bva:17.90,
+  taxi:{cdgR:56,cdgL:65,oryR:45,oryL:36}};
+
+/* ============ Lugares ============ */
+const P={
+  stm:{n:'Saint-Michel (Barrio Latino)',lat:48.8533,lon:2.3437,st:`${L('B','C')} Saint-Michel Notre-Dame · ${L(4,10)} Odéon`,h:'Barrio abierto todo el día',pr:'Gratis',q:'Fontaine Saint-Michel, Paris',tip:'Punto de encuentro clásico. Las crêperies de la rue de la Harpe sirven galettes saladas para llevar.'},
+  sc:{n:'Sainte-Chapelle',lat:48.8554,lon:2.3450,st:`${L(4)} Cité`,h:'9:00–17:00 en invierno (último acceso 16:30)',pr:'16 € residentes EEE · 22 € resto · gratis <18 y residentes UE <26',q:'Sainte-Chapelle, Paris',web:'https://www.sainte-chapelle.fr/es',tip:'Está dentro del Palacio de Justicia: hay control de seguridad tipo aeropuerto. Lleva la reserva con hora.'},
+  nd:{n:'Catedral de Notre-Dame',lat:48.8530,lon:2.3499,st:`${L(4)} Cité · ${L('B','C')} Saint-Michel Notre-Dame`,h:'Lun–vie 7:55–19:00 (jueves hasta las 22:00) · sáb y dom 8:15–19:30',pr:'Gratis · torres 16 € con reserva obligatoria',q:'Cathédrale Notre-Dame de Paris',web:'https://www.notredamedeparis.fr/es/',tip:'La entrada es siempre gratuita. La reserva de franja (también gratis) se abre pocos días antes y ahorra cola.'},
+  sh:{n:'Shakespeare and Company',lat:48.8526,lon:2.3471,st:`${L('B','C')} Saint-Michel Notre-Dame · ${L(4)} Cité`,h:'10:00–20:00',pr:'Gratis',q:'Shakespeare and Company, Paris',tip:'Librería inglesa de 1951. Al lado, en el square René-Viviani, el mercado de Navidad de Notre-Dame (del 26 de noviembre al 27 de diciembre).'},
+  pn:{n:'Pont Neuf · embarcadero',lat:48.8575,lon:2.3410,st:`${L(7)} Pont Neuf`,h:'Salidas desde las 10:30, también de noche',pr:'15 € en línea · 17 € en el muelle',q:'Vedettes du Pont Neuf, Paris',web:'https://www.vedettesdupontneuf.com/',tip:'El embarcadero está en la punta de la isla, bajando la escalera detrás de la estatua de Enrique IV.'},
+  sg:{n:'Saint-Germain-des-Prés',lat:48.8540,lon:2.3336,st:`${L(4)} Saint-Germain-des-Prés · ${L(10)} Mabillon`,h:'Cocinas abiertas 19:00–22:30',pr:'Menú 22–38 €',q:'Saint-Germain-des-Prés, Paris',tip:'Rue de Buci, rue Guisarde y rue des Canettes concentran bistrós con buen ambiente.'},
+  tr:{n:'Trocadéro',lat:48.8616,lon:2.2893,st:`${L(6,9)} Trocadéro`,h:'Explanada abierta 24 h',pr:'Gratis',q:'Place du Trocadéro, Paris',tip:'Sal del metro por «Tour Eiffel». La mejor foto es a primera hora, antes de que lleguen los grupos.'},
+  ef:{n:'Torre Eiffel',lat:48.8584,lon:2.2945,st:`${L(6)} Bir-Hakeim · ${L('C')} Champ de Mars–Tour Eiffel`,h:'9:30–23:00 · sube antes de las 21:30',pr:'Cima en ascensor 36,70 € · 2.ª planta en ascensor 23,50 € · escaleras 14,80 € · escaleras + cima 28 €',q:'Tour Eiffel, Paris',web:'https://www.toureiffel.paris/es',tip:'Destella 5 minutos a cada hora en punto desde que anochece; el último destello es a las 23:00. Con viento fuerte la cima puede cerrar.'},
+  rc:{n:'Rue Cler',lat:48.8566,lon:2.3063,st:`${L(8)} École Militaire`,h:'Puestos de mercado hasta las 13:00 el domingo',pr:'Almuerzo 12–20 €',q:'Rue Cler, Paris',tip:'Calle peatonal de mercado: quesos, rotisserie, panaderías. Monta un pícnic o siéntate en una terraza con estufa.'},
+  or:{n:'Musée d’Orsay',lat:48.8600,lon:2.3266,st:`${L('C')} Musée d’Orsay · ${L(12)} Solférino`,h:'9:30–18:00 (jueves hasta las 21:45) · cierra los lunes',pr:'16 € en línea · gratis <18 y residentes UE <26',q:'Musée d\'Orsay, Paris',web:'https://www.musee-orsay.fr/es',tip:'Con entrada con hora se accede por el lado del Sena: el vestíbulo está en obras. Empieza por la 5.ª planta: Monet, Renoir, Degas, Van Gogh y el gran reloj.'},
+  tu:{n:'Jardin des Tuileries · mercado de Navidad',lat:48.8635,lon:2.3275,st:`${L(1)} Tuileries · ${L(1,8,12)} Concorde`,h:'Mercado del 14 de noviembre al 3 de enero, 11:00–23:45',pr:'Entrada gratis · vin chaud 5–6 €',q:'Jardin des Tuileries, Paris',tip:'«La Magie de Noël»: casetas de madera, noria y pista de hielo. Prueba la tartiflette o un gofre.'},
+  co:{n:'Place de la Concorde',lat:48.8656,lon:2.3212,st:`${L(1,8,12)} Concorde`,h:'Plaza abierta 24 h',pr:'Gratis',q:'Place de la Concorde, Paris',tip:'Desde el obelisco se alinean el Louvre, los Campos Elíseos y el Arco del Triunfo.'},
+  ce:{n:'Campos Elíseos',lat:48.8698,lon:2.3075,st:`${L(1,9)} Franklin D. Roosevelt · ${L(1)} George V`,h:'Luces de Navidad desde las 17:00',pr:'Gratis',q:'Avenue des Champs-Élysées, Paris',tip:'Este año vuelve el mercado de Navidad a la parte baja de la avenida, junto a Concorde, con unas 200 casetas.'},
+  at:{n:'Arco del Triunfo',lat:48.8738,lon:2.2950,st:`${L(1,2,6)}${L('A')} Charles de Gaulle–Étoile`,h:'10:00–22:30 (último acceso 21:45)',pr:'16 € · gratis <18 y residentes UE <26 · sin reserva obligatoria',q:'Arc de Triomphe, Paris',web:'https://www.paris-arc-de-triomphe.fr/es',tip:'Se accede por el paso subterráneo desde la acera de los Campos Elíseos. Nunca cruces la rotonda. Son 284 escalones.'},
+  lv:{n:'Museo del Louvre',lat:48.8610,lon:2.3358,st:`${L(1,7)} Palais Royal–Musée du Louvre`,h:'9:00–18:00 (miércoles y viernes hasta las 21:00) · cierra los martes',pr:'22 € residentes EEE · 32 € resto · gratis <18 y residentes UE <26',q:'Musée du Louvre, Paris',web:'https://www.louvre.fr/es',tip:'Entra por el Carrousel du Louvre (acceso directo desde el metro) en lugar de la Pirámide: menos cola.'},
+  pr:{n:'Palais Royal',lat:48.8638,lon:2.3371,st:`${L(1,7)} Palais Royal–Musée du Louvre`,h:'Jardín 8:30–20:30',pr:'Gratis',q:'Jardin du Palais Royal, Paris',tip:'Las columnas de Buren a rayas son la foto. El jardín interior es un remanso a 3 minutos del Louvre.'},
+  gv:{n:'Galerie Vivienne',lat:48.8667,lon:2.3397,st:`${L(3)} Bourse · ${L(7,14)} Pyramides`,h:'8:30–20:00',pr:'Gratis',q:'Galerie Vivienne, Paris',tip:'Pasaje cubierto de 1823 con suelo de mosaico. A dos calles, la rue Sainte-Anne reúne los mejores ramen y udon de París.'},
+  og:{n:'Ópera Garnier',lat:48.8719,lon:2.3316,st:`${L(3,7,8)} Opéra · ${L('A')} Auber`,h:'Visita libre 10:00–17:00 (último acceso 16:00)',pr:'15 € residentes EEE · 25 € resto',q:'Palais Garnier, Paris',web:'https://www.operadeparis.fr/es/visitas/palais-garnier',tip:'La sala puede cerrar por ensayos: compruébalo en la web esa mañana. La gran escalera y el Grand Foyer siempre se visitan.'},
+  gl:{n:'Galeries Lafayette Haussmann',lat:48.8736,lon:2.3320,st:`${L(7,9)} Chaussée d’Antin–La Fayette`,h:'10:00–20:30 (domingo 11:00–20:00)',pr:'Gratis',q:'Galeries Lafayette Haussmann, Paris',tip:'Árbol de Navidad bajo la cúpula de 1912 y escaparates animados, este año diseñados por Castelbajac. La terraza de la 8.ª planta es gratuita.'},
+  mj:{n:'Mur des je t’aime · Abbesses',lat:48.8848,lon:2.3385,st:`${L(12)} Abbesses`,h:'Plaza 8:00–17:30 en invierno',pr:'Gratis',q:'Le mur des je t\'aime, Paris',tip:'Abbesses es la estación más profunda de París: sube en ascensor, no por la escalera de caracol.'},
+  sq:{n:'Sacré-Cœur',lat:48.8867,lon:2.3431,st:`${L(12)} Abbesses · ${L(2)} Anvers + funicular`,h:'Basílica 6:30–22:30 · cúpula 10:15–17:30, con pausa a mediodía',pr:'Basílica gratis · cúpula 8 €',q:'Basilique du Sacré-Cœur, Paris',web:'https://www.sacre-coeur-montmartre.com/es/',tip:'El funicular se paga con un billete Metro-Train-RER o acercando la tarjeta bancaria (2,55 €). En la escalinata ignora a quien quiera atarte una pulsera.'},
+  pt:{n:'Place du Tertre',lat:48.8865,lon:2.3408,st:`${L(12)} Abbesses`,h:'Pintores hasta el anochecer',pr:'Gratis',q:'Place du Tertre, Paris',tip:'Sigue por rue de l’Abreuvoir hasta La Maison Rose y la viña de Montmartre: las calles más bonitas de la colina.'},
+  mr:{n:'Moulin Rouge',lat:48.8841,lon:2.3323,st:`${L(2)} Blanche`,h:'Fachada iluminada desde el anochecer',pr:'Gratis desde la calle',q:'Moulin Rouge, Paris',tip:'La foto se hace desde la mediana del boulevard de Clichy. La rue Lepic sube desde aquí con bistrós y queserías.'}
+};
+
+/* ============ Llegada y salida ============ */
+const HUB={
+  cdg:{n:'Aeropuerto Charles de Gaulle',short:'CDG',cost:()=>F.airport,
+    in:()=>`Sigue los carteles «Paris par train» hasta el ${L('B')}. Unos 30 min a Gare du Nord, 35 a Châtelet–Les Halles y 40 a Saint-Michel Notre-Dame; hay tren cada 6–15 min. Necesitas el billete «Aéroports» de ${eur(F.airport)}, que también cubre el transbordo de metro hasta tu hotel.`,
+    out:()=>`Sal del hotel <b>3 h 30 antes del vuelo</b>. ${L('B')} dirección «Aéroport Charles de Gaulle 2 TGV» desde Saint-Michel, Châtelet–Les Halles o Gare du Nord. Mira las pantallas: no todos los trenes llegan al aeropuerto. Baja en «Aéroport CDG 1» (terminales 1 y 3) o en la última, «CDG 2 TGV» (terminal 2).`},
+  ory:{n:'Aeropuerto de Orly',short:'Orly',cost:()=>F.airport,
+    in:()=>`Metro ${L(14)} automático desde la propia terminal: 25 min a Châtelet, tren cada 2–3 min. Necesitas el billete «Aéroports» de ${eur(F.airport)}, válido también para el transbordo hasta tu hotel.`,
+    out:()=>`Sal del hotel <b>3 h antes del vuelo</b>. Metro ${L(14)} dirección «Aéroport d’Orly» desde Châtelet, Gare de Lyon o Saint-Lazare: 25–30 min, sin atascos.`},
+  bva:{n:'Aeropuerto de Beauvais',short:'Beauvais',cost:()=>F.bva+F.metro,
+    in:()=>`Lanzadera oficial Aérobus desde la puerta de la terminal: 1 h 15–1 h 30 hasta Porte Maillot (${eur(F.bva)} comprando en línea). Desde allí sigues en metro ${L(1)} con un billete normal de ${eur(F.metro)}.`,
+    out:()=>`Sal del hotel <b>4 h 15 antes del vuelo</b>. La lanzadera Aérobus sale de Porte Maillot ${L(1)} y el operador pide tomarla 3 h 30 antes del despegue. Compra el billete en línea la víspera.`},
+  train:{n:'Estación de tren o autobús',short:'Tren o bus',cost:()=>F.metro,
+    in:()=>`Todas las grandes estaciones tienen metro: Gare du Nord ${L(4,5)}${L('B','D')}, Gare de Lyon ${L(1,14)}${L('A','D')}, Montparnasse ${L(4,6,12,13)}, Austerlitz ${L(5,10)}${L('C')}, Gare de l’Est ${L(4,5,7)}, Bercy ${L(6,14)}. Billete normal de ${eur(F.metro)}.`,
+    out:()=>`Llega a la estación <b>30–45 min antes</b> (Eurostar: 75–90 min, hay control de pasaportes). El metro en hora punta va lleno: con maleta, evita el tramo 8:00–9:15 si puedes.`}
+};
+
+/* ============ Plan ============ */
+const DAYS=[
+ {date:'2026-11-28',dow:'Sábado',short:'Sáb 28',arr:'Día 1 · 4.º y 5.º distrito',title:'Île de la Cité y Barrio Latino',
+  sum:'Llegas a mediodía. Tarde tranquila y a pie por el París medieval, con crucero nocturno para ver la ciudad iluminada.',
+  facts:['Anochece 16:58','4 km a pie','2 trayectos de metro'],
+  stops:[
+   {id:'d1a',t:'12:00',dyn:'in',title:'Llegada y traslado al hotel',dur:'1 h–1 h 30',
+    tip:'La habitación suele estar lista a las 15:00. Deja la maleta en recepción (casi todos los hoteles la guardan gratis) y sal ligero.'},
+   {id:'d1b',t:'13:45',p:'stm',title:'Almuerzo rápido en el Barrio Latino',dur:'40 min',cost:'8–15 €',
+    go:`Desde tu hotel: ${L('B','C')} Saint-Michel Notre-Dame o ${L(4,10)} Odéon`,
+    txt:'Galette bretona salada o un jambon-beurre de panadería. Come algo rápido: hoy la luz se acaba pronto.',
+    tip:'La estación Saint-Michel de la línea 4 figura cerrada por obras hasta el 19 de diciembre: baja en Odéon o Cité. Y evita los restaurantes con captador de la rue de la Huchette.'},
+   {id:'d1c',t:'14:30',p:'sc',title:'Sainte-Chapelle',dur:'45 min',cost:'16–22 €',
+    go:`${walk(5)} cruzando el Pont Saint-Michel`,
+    txt:'Quince vidrieras del siglo XIII con 1.113 escenas bíblicas. Va primero porque necesita luz de día y cierra a las 17:00.',
+    tip:'Reserva la franja de las 14:30. La capilla alta está subiendo la escalera de caracol.'},
+   {id:'d1d',t:'15:30',p:'nd',title:'Catedral de Notre-Dame',dur:'45 min',cost:'Gratis',
+    go:`${walk(4)} por la rue de Lutèce`,
+    txt:'Reabierta en diciembre de 2024 tras el incendio: piedra clara, vidrieras restauradas y la nueva aguja. Recorre la nave y el deambulatorio.',
+    tip:'Sin reserva también se entra, por la fila de la derecha. Un sábado puede tardar 20–30 min.'},
+   {id:'d1e',t:'16:30',p:'sh',title:'Atardecer junto al Sena',dur:'1 h 15',cost:'Gratis',
+    go:`${walk(3)} por el Pont au Double`,
+    txt:'Shakespeare and Company, el mercado de Navidad del square René-Viviani y los puestos de los bouquinistes. Camina por el muelle hasta el Pont Neuf mientras se encienden las farolas.',
+    tip:'Un vin chaud en el mercado o un chocolate caliente en una terraza con estufa para entrar en calor.'},
+   {id:'d1f',t:'18:00',p:'pn',title:'Crucero por el Sena',dur:'1 h',cost:'15–17 €',
+    go:`${walk(10)} hasta la punta de la isla`,
+    txt:'Vedettes du Pont Neuf: una hora de Notre-Dame a la Torre Eiffel y vuelta. De noche todos los monumentos están iluminados.',
+    tip:'El barco tiene cubierta interior con calefacción. Si pasáis junto a la Torre a una hora en punto, la verás destellar desde el agua.'},
+   {id:'d1g',t:'19:30',p:'sg',title:'Cena en Saint-Germain-des-Prés',dur:'1 h 30',cost:'25–40 €',
+    go:`${walk(10)} por la rue Dauphine`,
+    txt:'Primer bistró del viaje: sopa de cebolla, confit de pato o steak-frites. Pide «une carafe d’eau», el agua del grifo es gratis.',
+    tip:'Sábado noche conviene reservar. De vuelta, el metro circula hasta las 2:15 aprox. los viernes y sábados.'}
+  ]},
+ {date:'2026-11-29',dow:'Domingo',short:'Dom 29',arr:'Día 2 · 7.º y 8.º distrito',title:'Torre Eiffel, Orsay y Campos Elíseos',
+  sum:'El día de los iconos. La Torre con luz de mañana, los impresionistas después de comer y las luces de Navidad al caer la tarde.',
+  facts:['Anochece 16:58','7 km a pie','3 trayectos de metro'],
+  alt:'<b>¿Prefieres Versalles?</b> Solo encaja hoy, porque el palacio cierra los lunes. Ocupa de 9:00 a 15:00 con el RER C (45 min por trayecto, un billete normal de ida y otro de vuelta; entrada 22 € para residentes del EEE y 25 € para el resto, con franja horaria). Sustituye la Torre y Orsay, y vuelve a las Tullerías para seguir el plan desde las 15:45.',
+  stops:[
+   {id:'d2a',t:'09:00',p:'tr',title:'Trocadéro: la foto de la Torre',dur:'20 min',cost:'Gratis',
+    go:`Desde tu hotel: metro ${L(6,9)} hasta Trocadéro`,
+    txt:'La explanada con la vista frontal de la Torre Eiffel. A esta hora hay poca gente y la luz viene de lado.',
+    tip:'Baja por los jardines y las fuentes hacia el Pont d’Iéna: las fotos mejoran a cada tramo.'},
+   {id:'d2b',t:'09:30',p:'ef',title:'Torre Eiffel',dur:'2 h',cost:'14,80–36,70 €',
+    go:`${walk(10)} cruzando el Pont d’Iéna`,
+    txt:'Sube a la 2.ª planta (115 m, la mejor altura para reconocer la ciudad) y, si tienes entrada, a la cima a 276 m.',
+    tip:'Las entradas con hora salen unos 60 días antes y la cima se agota. Plan B: escaleras hasta la 2.ª planta, 674 peldaños, más barato y casi sin cola.'},
+   {id:'d2c',t:'12:00',p:'rc',title:'Almuerzo en la rue Cler',dur:'1 h',cost:'12–20 €',
+    go:`${walk(15)} por el Champ de Mars`,
+    txt:'La calle de mercado más agradable del distrito 7. Domingo por la mañana está en plena actividad.',
+    tip:'Los puestos recogen hacia las 13:00. Las terrazas y bistrós siguen abiertos.'},
+   {id:'d2d',t:'13:30',p:'or',title:'Musée d’Orsay',dur:'2 h',cost:'16 €',
+    go:`${L('C')} Pont de l’Alma → Musée d’Orsay (2 paradas), o 25 min a pie pasando por Les Invalides`,
+    txt:'La mayor colección impresionista del mundo dentro de una estación de tren de 1900. Imprescindibles: Monet, Renoir, Degas y los Van Gogh.',
+    tip:'Cierra los lunes, por eso va hoy. Sube directo a la 5.ª planta y baja después.'},
+   {id:'d2e',t:'15:45',p:'tu',title:'Mercado de Navidad de las Tullerías',dur:'50 min',cost:'Gratis',
+    go:`${walk(6)} por la pasarela Léopold-Sédar-Senghor`,
+    txt:'Casetas de madera, noria y vin chaud en el jardín del Louvre. Es el mercado navideño más grande del centro.',
+    tip:'Merienda aquí: gofre, tartiflette o castañas. Lleva algo de efectivo, no todas las casetas aceptan tarjeta.'},
+   {id:'d2f',t:'16:45',p:'co',title:'Concorde y Campos Elíseos iluminados',dur:'1 h',cost:'Gratis',
+    go:`${walk(5)} hasta el obelisco`,
+    txt:'Sube la avenida recién anochecida, con las luces de Navidad encendidas desde las 17:00 y el nuevo mercado navideño junto a Concorde. Domingo las tiendas están abiertas.',
+    tip:`Son 2 km en subida. Atajo: ${L(1)} de Concorde a George V (3 paradas).`},
+   {id:'d2g',t:'18:00',p:'at',title:'Azotea del Arco del Triunfo',dur:'45 min',cost:'16 €',
+    go:`${walk(8)} avenida arriba`,
+    txt:'La mejor vista nocturna de París: las doce avenidas radiando desde tus pies y la Torre Eiffel enfrente.',
+    tip:'Sube sobre las 18:30 para estar arriba a las 19:00 en punto, cuando la Torre destella.'},
+   {id:'d2h',t:'19:30',p:'ce',title:'Cena y vuelta',dur:'1 h 30',cost:'20–35 €',
+    go:`${walk(8)} o metro ${L(1,2,6)} desde Charles de Gaulle–Étoile`,
+    txt:'En la propia avenida se paga la ubicación. Mejor las calles de detrás (rue de Ponthieu, zona Ternes) o cenar en tu barrio.',
+    tip:'Domingo cierran bastantes restaurantes: mira el horario antes de ir.'}
+  ]},
+ {date:'2026-11-30',dow:'Lunes',short:'Lun 30',arr:'Día 3 · 1.º, 9.º y 18.º distrito',title:'Louvre, pasajes y Montmartre',
+  sum:'El Louvre abre los lunes y cierra los martes, así que es su día. Por la tarde, París de escaparates y atardecer desde la colina.',
+  facts:['Anochece 16:57','6 km a pie','3 trayectos de metro'],
+  stops:[
+   {id:'d3a',t:'09:00',p:'lv',title:'Museo del Louvre',dur:'3 h',cost:'22–32 €',
+    go:`Desde tu hotel: metro ${L(1,7)} hasta Palais Royal–Musée du Louvre`,
+    txt:'Ruta exprés: Victoria de Samotracia, Mona Lisa, Las bodas de Caná, La Libertad guiando al pueblo, Venus de Milo y los apartamentos de Napoleón III.',
+    tip:'Reserva la franja de las 9:00 y ve primero a la Mona Lisa (ala Denon, sala 711). El lunes hay más gente porque Orsay cierra.'},
+   {id:'d3b',t:'12:15',p:'pr',title:'Palais Royal y almuerzo',dur:'1 h 15',cost:'12–20 €',
+    go:`${walk(4)} cruzando la rue de Rivoli`,
+    txt:'Columnas de Buren, soportales y jardín. Después, almuerzo en la rue Sainte-Anne (ramen, udon) o un bistró con «formule midi».',
+    tip:'La «formule» de mediodía (plato + entrante o postre) cuesta 16–22 € y solo se sirve entre semana.'},
+   {id:'d3c',t:'13:30',p:'gv',title:'Galerie Vivienne',dur:'20 min',cost:'Gratis',
+    go:`${walk(5)} por la rue des Petits-Champs`,
+    txt:'El pasaje cubierto más elegante de París: mosaicos, librería de 1826 y cúpula de cristal. Perfecto si llueve.',
+    tip:'Si te gustan, a 10 minutos están el Passage des Panoramas y el Passage Jouffroy.'},
+   {id:'d3d',t:'14:00',p:'og',title:'Ópera Garnier',dur:'1 h',cost:'15–25 €',
+    go:`${walk(12)} por la avenue de l’Opéra`,
+    txt:'La gran escalera de mármol, el Grand Foyer que compite con Versalles y el techo pintado por Chagall.',
+    tip:'Entrada por la esquina de la rue Scribe. Compra en línea para no hacer la cola de taquilla.'},
+   {id:'d3e',t:'15:00',p:'gl',title:'Galeries Lafayette: cúpula y azotea',dur:'45 min',cost:'Gratis',
+    go:`${walk(3)} por detrás de la Ópera`,
+    txt:'Árbol de Navidad suspendido bajo la cúpula modernista y escaparates animados en el boulevard Haussmann. Sube a la terraza: tejados de zinc y la Torre al fondo.',
+    tip:'La terraza está en la 8.ª planta y es gratuita. Con lluvia o viento la cierran.'},
+   {id:'d3f',t:'16:00',p:'mj',title:'Subida a Montmartre',dur:'30 min',cost:'Gratis',
+    go:`${L(12)} Trinité–d’Estienne d’Orves → Abbesses (4 paradas)`,
+    txt:'Sal a la place des Abbesses, con una de las últimas bocas de metro modernistas de Guimard y el muro de los «te quiero» en 250 idiomas.',
+    tip:'Para subir a la basílica: funicular (un billete de metro o tarjeta bancaria) o las escaleras de la rue Foyatier, 222 peldaños.'},
+   {id:'d3g',t:'16:40',p:'sq',title:'Atardecer en el Sacré-Cœur',dur:'45 min',cost:'Gratis',
+    go:`${walk(10)} cuesta arriba, o funicular`,
+    txt:'Todo París a tus pies mientras se pone el sol, a las 16:57. Después entra en la basílica: el mosaico del ábside es de los mayores del mundo.',
+    tip:'Lleva el móvil y la cartera en bolsillos interiores: es la zona con más carteristas del plan.'},
+   {id:'d3h',t:'17:30',p:'pt',title:'Place du Tertre y callejuelas',dur:'1 h',cost:'Gratis',
+    go:`${walk(3)} rodeando la basílica`,
+    txt:'La plaza de los pintores, La Maison Rose, la rue de l’Abreuvoir y la última viña de París.',
+    tip:'Los retratistas de la plaza cobran 40–80 €. Acuerda el precio antes de sentarte.'},
+   {id:'d3i',t:'19:00',p:'mr',title:'Cena en Montmartre y Moulin Rouge',dur:'2 h',cost:'22–35 €',
+    go:`${walk(10)} bajando por la rue Lepic`,
+    txt:'Última cena: bistró en la rue des Abbesses o la rue Lepic, y foto del molino rojo encendido antes de volver.',
+    tip:`Vuelta en ${L(2)} desde Blanche o ${L(12)} desde Pigalle. Prepara esta noche la maleta y el billete de mañana.`}
+  ]},
+ {date:'2026-12-01',dow:'Martes',short:'Mar 1',arr:'Día 4 · Despedida',title:'Au revoir, Paris',
+  sum:'Mañana de salida. Un último desayuno de panadería y al aeropuerto o la estación con margen.',
+  facts:['Amanece 8:22','Hora punta 7:30–9:30','El Louvre cierra hoy'],
+  stops:[
+   {id:'d4a',t:'07:30',title:'Desayuno de panadería',dur:'30 min',cost:'4–7 €',
+    txt:'Croissant o pain au chocolat recién hecho y un café crème. Busca el cartel «Artisan Boulanger»: garantiza que hornean allí.',
+    tip:'Para llevar a casa: macarons, mantequilla salada o una caja de sablés. La baguette aguanta mal el viaje.'},
+   {id:'d4b',t:'08:15',title:'Salida del hotel',dur:'15 min',
+    txt:'Revisa la caja fuerte, los enchufes y el baño. Ten a mano el pasaporte o DNI y la tarjeta de embarque sin conexión.',
+    tip:'Compra el billete de transporte la noche anterior en el móvil: por la mañana hay cola en las máquinas.'},
+   {id:'d4c',t:'08:30',dyn:'out',title:'Traslado de salida',dur:'1 h–1 h 30',
+    tip:'A esta hora el tren es más fiable que el taxi: la autopista A1 y el periférico se atascan a diario.'}
+  ]}
+];
+const TOTAL=DAYS.reduce((a,d)=>a+d.stops.length,0);
+
+/* ============ Listas ============ */
+const LISTS=[
+ {id:'res',t:'Reservas con hora',d:'Hazlas cuanto antes: las de fin de semana se agotan.',items:[
+   {id:'r1',b:'Torre Eiffel',s:'Domingo 29, 9:30. Solo en la web oficial; si la cima está agotada, mira cada mañana por si liberan plazas.',u:'https://www.toureiffel.paris/es'},
+   {id:'r2',b:'Museo del Louvre',s:'Lunes 30, 9:00. La franja con hora es la única entrada garantizada.',u:'https://www.louvre.fr/es'},
+   {id:'r3',b:'Sainte-Chapelle',s:'Sábado 28, 14:30. La última entrada es a las 16:30.',u:'https://www.sainte-chapelle.fr/es'},
+   {id:'r4',b:'Musée d’Orsay',s:'Domingo 29, 13:30. Con entrada con hora se accede por el lado del Sena.',u:'https://www.musee-orsay.fr/es'},
+   {id:'r5',b:'Arco del Triunfo (opcional)',s:'Domingo 29, 18:00. No exige reserva; comprar en línea evita la cola de taquilla.',u:'https://www.paris-arc-de-triomphe.fr/es'},
+   {id:'r6',b:'Ópera Garnier',s:'Lunes 30, 14:00. Confirma ese día que la sala está abierta.',u:'https://www.operadeparis.fr/es/visitas/palais-garnier'},
+   {id:'r7',b:'Crucero por el Sena',s:'Sábado 28, 18:00. En línea cuesta 15 €, dos menos que en el muelle.',u:'https://www.vedettesdupontneuf.com/'},
+   {id:'r8',b:'Notre-Dame (opcional y gratis)',s:'Las franjas se abren dos días antes en la web o la app oficial. Nadie más está autorizado a venderlas.',u:'https://www.notredamedeparis.fr/es/'},
+   {id:'r9',b:'Cena del sábado',s:'Reserva mesa para las 19:30 en Saint-Germain.'}]},
+ {id:'tra',t:'Transporte',d:'Déjalo listo antes de despegar.',items:[
+   {id:'t1',b:'Instalar la app Île-de-France Mobilités',s:'iPhone XR o posterior con iOS 17.5, o Android 9 con NFC. En iPhone también se compra desde Cartera.',u:'https://www.iledefrance-mobilites.fr/es'},
+   {id:'t2',b:'Comprar el billete de llegada',s:'Billete «Aéroports» si aterrizas en CDG u Orly; lanzadera en línea si llegas a Beauvais.'},
+   {id:'t3',b:'Descargar París sin conexión en Google Maps',s:'Perfil → Mapas sin conexión → selecciona la ciudad entera.'},
+   {id:'t4',b:'Guardar la dirección del hotel',s:'Escríbela también en la pestaña Transporte para tener la ruta a un toque.'},
+   {id:'t5',b:'Datos móviles',s:'El roaming de la UE no tiene coste extra. Con línea de fuera de la UE, compra una eSIM antes de salir.'}]},
+ {id:'doc',t:'Documentos y dinero',d:'',items:[
+   {id:'o1',b:'DNI o pasaporte en vigor',s:'Si no eres ciudadano de la UE, revisa los requisitos de entrada al espacio Schengen para tu pasaporte.'},
+   {id:'o2',b:'Tarjeta Sanitaria Europea o seguro de viaje',s:''},
+   {id:'o3',b:'Tarjeta bancaria sin comisiones',s:'Se paga con tarjeta casi en todas partes. Lleva 40–50 € en efectivo para mercados y propinas.'},
+   {id:'o4',b:'Tarjetas de embarque y reservas sin conexión',s:'Guárdalas en el monedero del móvil o como PDF.'}]},
+ {id:'mal',t:'Maleta para finales de noviembre',d:'Entre 4 y 9 °C, humedad y lluvia frecuente.',items:[
+   {id:'m1',b:'Abrigo impermeable o plumífero con capucha',s:''},
+   {id:'m2',b:'Capas: camiseta térmica y jersey',s:'En museos y metro hace calor; fuera, frío.'},
+   {id:'m3',b:'Bufanda, guantes y gorro',s:'En la Torre y en el barco sopla viento.'},
+   {id:'m4',b:'Calzado cómodo que aguante la lluvia',s:'Caminarás 6–7 km al día sobre adoquines.'},
+   {id:'m5',b:'Paraguas plegable',s:''},
+   {id:'m6',b:'Batería externa y cable',s:'El móvil es tu billete, tu mapa y tus entradas.'},
+   {id:'m7',b:'Adaptador de enchufe',s:'Francia usa tipo E a 230 V. Los enchufes españoles y europeos sirven sin adaptador.'},
+   {id:'m8',b:'Bolso cruzado con cremallera',s:'La mejor defensa contra los carteristas.'}]}
+];
+const LTOTAL=LISTS.reduce((a,g)=>a+g.items.length,0);
+
+/* ============ Estado ============ */
+const KEY='paris-2026-v1';
+let state={checks:{},lists:{},arrive:'cdg',depart:'cdg',trips:[2,3,3,0],hotel:'',at:0};
+try{const s=JSON.parse(localStorage.getItem(KEY)||'null'); if(s&&typeof s==='object') state=Object.assign(state,s);}catch(e){}
+let cloud=null, cloudOk=false, writing=false, dirty=false, cloudTimer=null;
+function save(){
+  state.at=Date.now();
+  try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){}
+  if(cloud){dirty=true;clearTimeout(cloudTimer);cloudTimer=setTimeout(push,1200);}
+}
+async function push(){
+  if(!cloud||writing||!dirty) return;
+  writing=true; dirty=false;
+  try{await cloud.set(JSON.parse(JSON.stringify(state)));cloudOk=true;}catch(e){cloudOk=false;}
+  writing=false; syncNote();
+  if(dirty) cloudTimer=setTimeout(push,1200);
+}
+async function cloudInit(){
+  try{
+    if(!window.claude||typeof window.claude.use!=='function') return;
+    const [db,user]=await Promise.all([window.claude.use('db'),window.claude.use('user')]);
+    if(!db||!user) return;
+    const id=await user.id(); if(!id) return;
+    const ref=db.doc('data/users/'+id+'/trip');
+    const snap=await ref.get();
+    cloud=ref; cloudOk=true;
+    const remote=snap.exists?snap.data():null;
+    if(remote&&(remote.at||0)>(state.at||0)){
+      state=Object.assign(state,JSON.parse(JSON.stringify(remote)));
+      try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){}
+      renderAll();
+    }else if(state.at&&(!remote||(remote.at||0)<state.at)){dirty=true;push();}
+    syncNote();
+  }catch(e){}
+}
+function syncNote(){const el=$('#sync');if(el)el.textContent=cloud&&cloudOk?'Tus marcas se guardan en este dispositivo y en tu cuenta, así las ves también desde otro móvil u ordenador.':'Tus marcas se guardan en este dispositivo.';}
+
+/* ============ Fechas ============ */
+function parisNow(){
+  const o={};new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Paris',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false}).formatToParts(new Date()).forEach(p=>o[p.type]=p.value);
+  return {date:`${o.year}-${o.month}-${o.day}`,hm:`${o.hour==='24'?'00':o.hour}:${o.minute}`};
+}
+const dnum=s=>{const [y,m,d]=s.split('-').map(Number);return Date.UTC(y,m-1,d)/864e5;};
+const NOW=parisNow();
+const todayIdx=DAYS.findIndex(d=>d.date===NOW.date);
+const ui={tab:'plan',day:todayIdx>=0?todayIdx:0,mapDay:todayIdx>=0?todayIdx:0,mv:null,scroll:{},confirmReset:false};
+
+/* ============ Cabecera ============ */
+function renderStatus(){
+  const done=DAYS.reduce((a,d)=>a+d.stops.filter(s=>state.checks[s.id]).length,0);
+  const diff=dnum(DAYS[0].date)-dnum(NOW.date);
+  $('#st-when').textContent=todayIdx>=0?`Hoy es el día ${todayIdx+1} de 4`:diff>0?(diff===1?'Sales mañana':`Faltan ${diff} días para París`):'París en 4 días';
+  $('#st-prog').textContent=`${done} de ${TOTAL} paradas hechas`;
+  $('#st-bar').style.width=(100*done/TOTAL)+'%';
+}
+
+/* ============ Plan ============ */
+function stopView(s){
+  if(!s.dyn) return s;
+  const h=HUB[s.dyn==='in'?state.arrive:state.depart];
+  return Object.assign({},s,{txt:s.dyn==='in'?h.in():h.out(),cost:eur(h.cost()),
+    go:s.dyn==='in'?`Llegas a: <b>${h.n}</b>`:`Sales desde: <b>${h.n}</b>`,hub:true});
+}
+function renderPlan(){
+  const d=DAYS[ui.day], dc=`--dc:var(--d${ui.day+1})`;
+  const nowI=ui.day===todayIdx?d.stops.reduce((a,s,i)=>s.t<=NOW.hm?i:a,-1):-1;
+  const pts=d.stops.filter(s=>s.p).map(s=>P[s.p].q);
+  const route=pts.length>1?'https://www.google.com/maps/dir/?api=1&origin='+encodeURIComponent(pts[0])+'&destination='+encodeURIComponent(pts[pts.length-1])+(pts.length>2?'&waypoints='+pts.slice(1,-1).map(encodeURIComponent).join('%7C'):'')+'&travelmode=walking':'';
+  $('#v-plan').innerHTML=`
+  <div class="days" role="group" aria-label="Elegir día">${DAYS.map((x,i)=>{const n=x.stops.filter(s=>state.checks[s.id]).length;
+    return `<button type="button" data-day="${i}" aria-pressed="${i===ui.day}" style="--dc:var(--d${i+1})"><b>${x.short}</b><span>${n}/${x.stops.length}</span></button>`}).join('')}</div>
+  <div class="dayplaque"><span class="arr">${d.arr}</span><h2>${d.title}</h2><p>${d.dow} ${+d.date.slice(8)} de ${d.date.slice(5,7)==='11'?'noviembre':'diciembre'}. ${d.sum}</p></div>
+  <div class="facts">${d.facts.map(f=>`<span class="pill">${f}</span>`).join('')}</div>
+  ${d.alt?`<div class="note">${d.alt}</div>`:''}
+  <ol class="rail" style="${dc}">${d.stops.map((raw,i)=>{const s=stopView(raw),p=s.p&&P[s.p],done=!!state.checks[s.id];
+    return `<li class="stop${done?' done':''}">
+      <div class="go">${s.go||''}</div>
+      <button type="button" class="node" data-check="${s.id}" aria-pressed="${done}" aria-label="${done?'Desmarcar':'Marcar como hecha'}: ${s.title}">${IC.check}</button>
+      <div class="card">
+        <div class="row1"><span class="time">${s.t}</span><span class="dur">${s.dur||''}</span>${i===nowI?'<span class="pill now">Ahora</span>':''}${s.cost?`<span class="pill cost">${s.cost}</span>`:''}</div>
+        <h3 class="h3">${s.title}</h3>
+        <p>${s.txt}</p>
+        ${s.tip?`<p class="tip"><b>Consejo.</b> ${s.tip}</p>`:''}
+        <div class="acts">${p?`<button type="button" class="btn" data-map="${s.p}">${IC.pin}Ver en mapa</button><a class="btn pri" href="${gm(p.q)}" target="_blank" rel="noopener">${IC.go}Cómo llegar</a>${p.web?ext(p.web,'Entradas'):''}`
+          :s.hub?`<a class="btn" href="#transporte">Ver opciones y precios</a>${state.hotel?`<a class="btn pri" href="${s.dyn==='in'?gm(state.hotel+', Paris'):gm(HUB[state.depart].n+', France','transit',state.hotel+', Paris')}" target="_blank" rel="noopener">${IC.go}Ruta ${s.dyn==='in'?'al hotel':'desde el hotel'}</a>`:''}`:''}</div>
+      </div></li>`}).join('')}</ol>
+  ${route?`<div class="acts">${ext(route,'Ver el recorrido del día en Google Maps')}</div>`:''}
+  ${ui.day<3?`<button type="button" class="btn" data-day="${ui.day+1}">Siguiente: ${DAYS[ui.day+1].dow.toLowerCase()}, ${DAYS[ui.day+1].title}</button>`:''}`;
+}
+
+/* ============ Mapa ============ */
+const MX=lon=>(lon-2.25)*73240, MY=lat=>(48.905-lat)*111200, XY=(lat,lon)=>[MX(lon),MY(lat)];
+const WORLD={w:MX(2.42),h:MY(48.812)};
+const RIVER=[[48.8268,2.3895],[48.8335,2.38],[48.8395,2.3722],[48.8452,2.3655],[48.8492,2.3605],[48.8517,2.3565],[48.855,2.347],[48.8575,2.3408],[48.8593,2.3345],[48.8611,2.3275],[48.8632,2.3198],[48.864,2.3136],[48.8637,2.306],[48.8634,2.3012],[48.8622,2.2965],[48.8598,2.2924],[48.8556,2.2878],[48.85,2.2812],[48.8455,2.275],[48.8395,2.2695],[48.8345,2.264]];
+const CITY=[[48.878,2.282],[48.8857,2.292],[48.8945,2.3135],[48.9005,2.3445],[48.9,2.36],[48.9005,2.386],[48.8885,2.396],[48.877,2.407],[48.864,2.41],[48.847,2.413],[48.8355,2.407],[48.829,2.393],[48.82,2.369],[48.8165,2.36],[48.817,2.344],[48.8205,2.3255],[48.8265,2.305],[48.831,2.288],[48.837,2.258],[48.848,2.256],[48.861,2.266],[48.8715,2.2755]];
+const PARKS=[{c:[48.8635,2.327],w:820,h:290,a:26.700},{c:[48.8556,2.299],w:800,h:210,a:43.400},{c:[48.8462,2.3371],w:560,h:460,a:0,r:200},{c:[48.844,2.3595],w:560,h:200,a:30},{c:[48.8797,2.309],w:300,h:240,a:0,r:110},{c:[48.8809,2.3828],w:500,h:420,a:0,r:190},{c:[48.8625,2.25],w:1500,h:3200,a:0,r:600}];
+const ISLES=[{c:[48.855,2.347],rx:520,ry:118,a:34.500,hx:610,hy:190},{c:[48.8517,2.3565],rx:320,ry:105,a:27,hx:400,hy:185}];
+const AREAS=[['MONTMARTRE',48.8912,2.3395],['LE MARAIS',48.8598,2.3625],['BARRIO LATINO',48.8478,2.3478],['SAINT-GERMAIN',48.8508,2.331],['CAMPOS ELÍSEOS',48.8672,2.3018],['ÓPERA',48.8695,2.3368],['INVALIDES',48.8555,2.3125]];
+const GARES=[['Gare du Nord',48.8809,2.3553],['Gare de l’Est',48.8768,2.3592],['Gare de Lyon',48.8443,2.3744],['Gare Montparnasse',48.8409,2.3209],['Gare Saint-Lazare',48.8763,2.3254],['Gare d’Austerlitz',48.8423,2.3655],['Châtelet–Les Halles',48.862,2.347]];
+function smooth(ll){const p=ll.map(a=>XY(a[0],a[1]));let d=`M${p[0][0].toFixed(0)} ${p[0][1].toFixed(0)}`;
+  for(let i=0;i<p.length-1;i++){const a=p[i-1]||p[i],b=p[i],c=p[i+1],e=p[i+2]||c;
+    d+=`C${(b[0]+(c[0]-a[0])/6).toFixed(0)} ${(b[1]+(c[1]-a[1])/6).toFixed(0)} ${(c[0]-(e[0]-b[0])/6).toFixed(0)} ${(c[1]-(e[1]-b[1])/6).toFixed(0)} ${c[0].toFixed(0)} ${c[1].toFixed(0)}`;}
+  return d;}
+function mapPins(){
+  const out=[],seen={};
+  const days=ui.mapDay==='all'?DAYS.map((d,i)=>i):[ui.mapDay];
+  days.forEach(di=>{let n=0;DAYS[di].stops.forEach(s=>{if(!s.p||seen[s.p])return;seen[s.p]=1;n++;out.push({id:s.p,day:di,n,stop:s});});});
+  return out;
+}
+function mapSize(){const b=$('#map');return {pw:b.clientWidth||360,ph:b.clientHeight||380};}
+function fit(){
+  const {pw,ph}=mapSize(),pins=mapPins().map(p=>XY(P[p.id].lat,P[p.id].lon));
+  const xs=pins.map(p=>p[0]),ys=pins.map(p=>p[1]);
+  const x0=Math.min(...xs),x1=Math.max(...xs),y0=Math.min(...ys),y1=Math.max(...ys);
+  ui.mv={cx:(x0+x1)/2,cy:(y0+y1)/2,w:Math.max((x1-x0)*1.45,(y1-y0)*1.45*pw/ph,1700)};
+}
+function clampView(){const v=ui.mv;v.w=Math.min(15000,Math.max(700,v.w));v.cx=Math.min(WORLD.w,Math.max(0,v.cx));v.cy=Math.min(WORLD.h,Math.max(0,v.cy));}
+function viewBox(){const {pw,ph}=mapSize(),v=ui.mv,h=v.w*ph/pw;return {x:v.cx-v.w/2,y:v.cy-h/2,w:v.w,h,s:v.w/pw,pw,ph};}
+function renderMap(){
+  if(ui.tab!=='mapa') return;
+  if(!ui.mv) fit();
+  clampView();
+  const B=viewBox(),s=B.s,pins=mapPins();
+  const rect=p=>{const [x,y]=XY(p.c[0],p.c[1]);return `<rect x="${x-p.w/2}" y="${y-p.h/2}" width="${p.w}" height="${p.h}" rx="${p.r||40}" transform="rotate(${p.a} ${x} ${y})" fill="var(--park)"/>`;};
+  const isle=(o,halo)=>{const [x,y]=XY(o.c[0],o.c[1]);return `<ellipse cx="${x}" cy="${y}" rx="${halo?o.hx:o.rx}" ry="${halo?o.hy:o.ry}" transform="rotate(${o.a} ${x} ${y})" fill="var(--${halo?'water':'land'})"/>`;};
+  let g=`<rect x="${B.x-2000}" y="${B.y-2000}" width="${B.w+4000}" height="${B.h+4000}" fill="var(--outside)"/>`;
+  g+=`<polygon points="${CITY.map(a=>XY(a[0],a[1]).map(n=>n.toFixed(0)).join(',')).join(' ')}" fill="var(--land)" stroke="var(--line)" stroke-width="${2*s}" stroke-linejoin="round"/>`;
+  g+=PARKS.map(rect).join('');
+  g+=`<path d="${smooth(RIVER)}" fill="none" stroke="var(--water)" stroke-width="${Math.max(165,5*s)}" stroke-linecap="round" stroke-linejoin="round"/>`;
+  g+=ISLES.map(o=>isle(o,1)).join('')+ISLES.map(o=>isle(o,0)).join('');
+  if(s<16) g+=AREAS.map(a=>{const [x,y]=XY(a[1],a[2]);return `<text x="${x}" y="${y}" text-anchor="middle" font-size="${10*s}" font-weight="600" letter-spacing="${1.4*s}" fill="var(--muted)" opacity=".75">${a[0]}</text>`}).join('');
+  g+=GARES.map(a=>{const [x,y]=XY(a[1],a[2]),r=4*s;return `<rect x="${x-r}" y="${y-r}" width="${2*r}" height="${2*r}" rx="${1.5*s}" fill="var(--surface)" stroke="var(--muted)" stroke-width="${1.6*s}"/>`+(s<11?`<text x="${x+7*s}" y="${y+3.500*s}" font-size="${9.500*s}" fill="var(--muted)">${a[0]}</text>`:'')}).join('');
+  if(ui.mapDay!=='all'&&pins.length>1) g+=`<polyline points="${pins.map(p=>XY(P[p.id].lat,P[p.id].lon).map(n=>n.toFixed(0)).join(',')).join(' ')}" fill="none" stroke="var(--d${ui.mapDay+1})" stroke-width="${3*s}" stroke-dasharray="${1*s} ${7*s}" stroke-linecap="round" opacity=".9"/>`;
+  /* etiquetas sin solaparse */
+  const px=pins.map(p=>{const [x,y]=XY(P[p.id].lat,P[p.id].lon);return {p,x,y,sx:(x-B.x)/s,sy:(y-B.y)/s};});
+  const R=ui.mapDay==='all'?8:12, boxes=px.map(o=>[o.sx-R-2,o.sy-R-2,2*R+4,2*R+4]);
+  const hit=(a,b)=>a[0]<b[0]+b[2]&&a[0]+a[2]>b[0]&&a[1]<b[1]+b[3]&&a[1]+a[3]>b[1];
+  let labels='';
+  px.forEach(o=>{const name=P[o.p.id].n.split(' · ')[0],w=name.length*6.200+8,h=15;
+    const cands=[[o.sx+R+4,o.sy-h/2,'start',o.sx+R+5],[o.sx-R-4-w,o.sy-h/2,'end',o.sx-R-5],[o.sx-w/2,o.sy+R+3,'middle',o.sx],[o.sx-w/2,o.sy-R-3-h,'middle',o.sx]];
+    for(const c of cands){const b=[c[0],c[1],w,h];
+      if(b[0]<2||b[0]+w>B.pw-2||b[1]<2||b[1]+h>B.ph-2) continue;
+      if(boxes.some(x=>hit(b,x))) continue;
+      boxes.push(b);
+      labels+=`<text x="${B.x+c[3]*s}" y="${B.y+(c[1]+11.500)*s}" text-anchor="${c[2]}" font-size="${11.500*s}" font-weight="600" fill="var(--ink)" stroke="var(--land)" stroke-width="${3.500*s}" paint-order="stroke" stroke-linejoin="round">${name}</text>`;break;}
+  });
+  g+=labels;
+  g+=px.map(o=>`<g data-poi="${o.p.id}" style="cursor:pointer"><circle cx="${o.x}" cy="${o.y}" r="${(R+7)*s}" fill="transparent"/><circle cx="${o.x}" cy="${o.y}" r="${R*s}" fill="var(--d${o.p.day+1})" stroke="var(--surface)" stroke-width="${2.500*s}"/>${ui.mapDay==='all'?'':`<text x="${o.x}" y="${o.y+4.200*s}" text-anchor="middle" font-size="${12*s}" font-weight="700" fill="var(--on-day)">${o.p.n}</text>`}</g>`).join('');
+  $('#map').innerHTML=`<svg viewBox="${B.x} ${B.y} ${B.w} ${B.h}" preserveAspectRatio="xMidYMid slice" aria-hidden="true">${g}</svg>`;
+}
+function renderMapUI(){
+  $('#map-chips').innerHTML=`<button type="button" class="chip" data-mapday="all" aria-pressed="${ui.mapDay==='all'}">Todo el viaje</button>`+
+    DAYS.slice(0,3).map((d,i)=>`<button type="button" class="chip" data-mapday="${i}" aria-pressed="${ui.mapDay===i}" style="--dc:var(--d${i+1})"><i></i>${d.short}</button>`).join('');
+  $('#map-legend').innerHTML=mapPins().map(p=>`<button type="button" data-poi="${p.id}" style="--dc:var(--d${p.day+1})"><span class="num">${ui.mapDay==='all'?p.day+1:p.n}</span><span><b>${P[p.id].n}</b><small>${ui.mapDay==='all'?DAYS[p.day].short+' · ':''}${p.stop.t} · ${p.stop.title}</small></span></button>`).join('');
+  renderMap();
+}
+function openSheet(id){
+  const p=P[id],sh=$('#sheet');
+  sh.innerHTML=`<header><h3 class="h3" id="sheet-title">${p.n}</h3><button type="button" class="x" data-close aria-label="Cerrar">${IC.x}</button></header>
+   <dl class="kv"><dt>Metro</dt><dd>${p.st}</dd><dt>Horario</dt><dd>${p.h}</dd><dt>Precio</dt><dd>${p.pr}</dd></dl>
+   <p class="tip">${p.tip}</p>
+   <div class="acts"><a class="btn pri" href="${gm(p.q)}" target="_blank" rel="noopener">${IC.go}Cómo llegar en transporte</a><a class="btn" href="${gm(p.q,'walking')}" target="_blank" rel="noopener">${IC.walk}A pie</a>${p.web?ext(p.web,'Web oficial'):''}</div>`;
+  sh.hidden=false; $('.x',sh).focus({preventScroll:true});
+  if(ui.tab==='mapa'&&ui.mv){ /* deja la parada visible por encima de la ficha */
+    $('#main').scrollTop=0;
+    const m=$('#map').getBoundingClientRect(),{pw,ph}=mapSize(),vis=Math.max(90,Math.min(ph,sh.getBoundingClientRect().top-m.top)),[x,y]=XY(p.lat,p.lon);
+    ui.mv.cx=x;ui.mv.cy=y+(ph/2-vis/2)*ui.mv.w/pw;renderMap();
+  }
+}
+function closeSheet(){$('#sheet').hidden=true;}
+/* gestos del mapa */
+(function(){
+  const box=$('#map'),ptrs=new Map();let g=null;
+  const setVB=()=>{const svg=$('svg',box);if(!svg)return;clampView();const B=viewBox();svg.setAttribute('viewBox',`${B.x} ${B.y} ${B.w} ${B.h}`);};
+  const dist=()=>{const a=[...ptrs.values()];return Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y);};
+  const mid=()=>{const a=[...ptrs.values()];return {x:a.reduce((t,p)=>t+p.x,0)/a.length,y:a.reduce((t,p)=>t+p.y,0)/a.length};};
+  const begin=()=>{g={v:Object.assign({},ui.mv),m:mid(),d:ptrs.size>1?dist():0,moved:g?g.moved:0};};
+  box.addEventListener('pointerdown',e=>{if(!ui.mv)return;try{box.setPointerCapture(e.pointerId);}catch(_){}
+    ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});g=null;begin();g.moved=0;});
+  box.addEventListener('pointermove',e=>{if(!ptrs.has(e.pointerId)||!g)return;ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    const m=mid(),{pw}=mapSize();let w=g.v.w;if(ptrs.size>1&&g.d)w=g.v.w*g.d/dist();
+    const s=w/pw;g.moved=Math.max(g.moved,Math.hypot(m.x-g.m.x,m.y-g.m.y),ptrs.size>1?10:0);
+    ui.mv={w,cx:g.v.cx-(m.x-g.m.x)*s,cy:g.v.cy-(m.y-g.m.y)*s};setVB();});
+  const end=e=>{if(!ptrs.has(e.pointerId))return;const moved=g?g.moved:0;ptrs.delete(e.pointerId);
+    if(ptrs.size){begin();return;}
+    if(moved<7&&e.type==='pointerup'){const t=document.elementFromPoint(e.clientX,e.clientY),poi=t&&t.closest('[data-poi]');if(poi){openSheet(poi.dataset.poi);return;}closeSheet();}
+    g=null;renderMap();};
+  box.addEventListener('pointerup',end);box.addEventListener('pointercancel',end);
+  let wt;box.addEventListener('wheel',e=>{if(!ui.mv)return;e.preventDefault();ui.mv.w*=e.deltaY>0?1.150:0.870;setVB();clearTimeout(wt);wt=setTimeout(renderMap,120);},{passive:false});
+  window.addEventListener('resize',()=>{if(ui.tab==='mapa')renderMap();});
+})();
+
+/* ============ Transporte ============ */
+function fareOptions(){
+  const t=state.trips,a=HUB[state.arrive],d=HUB[state.depart];
+  const hubs=a.cost()+d.cost(), inc=k=>(k==='cdg'||k==='ory');
+  const single=t.reduce((x,n)=>x+n*F.metro,0)+hubs;
+  const mixDays=t.map(n=>n*F.metro>F.jour);
+  const mix=t.reduce((x,n)=>x+Math.min(n*F.metro,F.jour),0)+hubs;
+  const pvIn=inc(state.arrive)?0:a.cost()-(state.arrive==='bva'?F.metro:a.cost());
+  const pvOut=inc(state.depart)?0:d.cost()-(state.depart==='bva'?F.metro:d.cost());
+  const pv5=F.pv[5]+pvIn+pvOut;
+  const pv3=F.pv[3]+pvIn+t[3]*F.metro+d.cost();
+  const o=[{k:'single',n:'Billetes sueltos',v:single,p:`${t.reduce((x,n)=>x+n,0)} billetes de metro a ${eur(F.metro)} más los traslados de llegada y salida. Se cargan en el móvil o en una tarjeta Navigo Easy.`}];
+  if(mixDays.some(Boolean)) o.push({k:'mix',n:'Sueltos + Navigo Día',v:mix,p:`Pase de día (${eur(F.jour)}) el ${mixDays.map((m,i)=>m?DAYS[i].dow.toLowerCase():'').filter(Boolean).join(' y el ')}, y billetes sueltos el resto.`});
+  o.push(pv5<=pv3?{k:'pv',n:'Paris Visite 5 días',v:pv5,p:'Viajes ilimitados e incluye los aeropuertos de CDG y Orly. No existe de 4 días, así que pagas uno de más.'}
+                 :{k:'pv',n:'Paris Visite 3 días + salida',v:pv3,p:'Ilimitado de sábado a lunes con el aeropuerto de llegada incluido; el martes pagas la salida aparte.'});
+  return o.sort((x,y)=>x.v-y.v);
+}
+function renderFare(){
+  const o=fareOptions(),max=Math.max(...o.map(x=>x.v));
+  $('#fare').innerHTML=o.map((x,i)=>`<div class="opt${i===0?' best':''}"><div class="l1"><b>${x.n}</b>${i===0?'<span class="pill ok">Lo más barato</span>':''}<span class="amt">${eur(x.v)}</span></div><div class="bar"><i style="width:${100*x.v/max}%"></i></div><p>${x.p}</p></div>`).join('')
+   +`<div class="opt"><div class="l1"><b>Navigo Semana</b><span class="pill warn">No encaja</span><span class="amt">${eur(F.semaine)}</span></div><p>Va siempre de lunes a domingo. Tu viaje cae en dos semanas distintas (sábado y domingo de una, lunes y martes de la otra), así que necesitarías dos pases.</p></div>`;
+}
+function hubCard(k,dir){
+  const D={
+   cdg:[['RER B','Recomendado',eur(F.airport),`${L('B')} cada 6–15 min, de 5:00 a medianoche. Unos 30 min a Gare du Nord y 35 a Châtelet–Les Halles. Billete «Aéroports» obligatorio. Hasta el 11 de diciembre, de lunes a viernes no circula hacia el aeropuerto desde las 22:45; no afecta a una llegada a mediodía ni a una salida por la mañana.`],
+        ['Taxi oficial','Tarifa plana',`${F.taxi.cdgR} € / ${F.taxi.cdgL} €`,`Precio fijo por coche: ${F.taxi.cdgR} € a la orilla derecha (norte del Sena) y ${F.taxi.cdgL} € a la izquierda. 45–70 min según tráfico. Solo en la fila señalizada: ignora a quien te ofrezca taxi dentro de la terminal.`],
+        ['Roissybus','Ya no existe','—','El autobús directo a Ópera dejó de funcionar en marzo de 2026. Si una guía antigua lo recomienda, ignórala.']],
+   ory:[['Metro 14','Recomendado',eur(F.airport),`${L(14)} automático cada 2–5 min, de 5:30 a 0:30. 25 min a Châtelet. Billete «Aéroports» obligatorio; en los tornos de salida de Orly también se puede pagar acercando la tarjeta bancaria. El Orlybus ya no existe.`],
+        ['Taxi oficial','Tarifa plana',`${F.taxi.oryL} € / ${F.taxi.oryR} €`,`Precio fijo por coche: ${F.taxi.oryL} € a la orilla izquierda (sur del Sena) y ${F.taxi.oryR} € a la derecha. 30–50 min.`]],
+   bva:[['Lanzadera Aérobus','Única opción directa',eur(F.bva),`Autobús coordinado con cada vuelo, 1 h 15–1 h 30 hasta Porte Maillot. ${eur(F.bva)} por trayecto o 29,90 € ida y vuelta en línea; en taquilla, 18 € y 35 €. Confirma la parada en aerobus.fr antes de viajar.`],
+        ['Metro hasta el hotel','Billete normal',eur(F.metro),`Desde Porte Maillot, ${L(1)} hacia el centro: 10 min a Concorde y 15 a Châtelet.`]],
+   train:[['Metro o RER','Billete normal',eur(F.metro),`Gare du Nord ${L(4,5)}${L('B','D')} · Gare de Lyon ${L(1,14)}${L('A','D')} · Montparnasse ${L(4,6,12,13)} · Austerlitz ${L(5,10)}${L('C')} · Gare de l’Est ${L(4,5,7)} · Bercy ${L(6,14)}.`],
+        ['Taxi','Con taxímetro','12–25 €','Dentro de París no hay tarifa plana. Suplemento a partir del quinto pasajero.']]
+  }[k];
+  return `<div class="card"><span class="eyebrow">${dir==='in'?'Llegada · sábado 28':'Salida · martes 1'}</span><h3 class="h3">${HUB[k].n}</h3>
+   <div class="tickets">${D.map(r=>`<div class="ticket"><b>${r[0]}</b><span class="p">${r[2]}</span><span class="pill${r[1]==='Recomendado'?' ok':''}">${r[1]}</span><p>${r[3]}</p></div>`).join('')}</div>
+   <p class="tip">${dir==='in'?HUB[k].in():HUB[k].out()}</p>
+   ${state.hotel?`<div class="acts"><a class="btn pri" href="${dir==='in'?gm(state.hotel+', Paris','transit',HUB[k].n+', France'):gm(HUB[k].n+', France','transit',state.hotel+', Paris')}" target="_blank" rel="noopener">${IC.go}${dir==='in'?'Ruta hasta el hotel':'Ruta desde el hotel'}</a></div>`:''}</div>`;
+}
+function renderHubs(){$('#hubs').innerHTML=hubCard(state.arrive,'in')+hubCard(state.depart,'out');}
+function renderTransport(){
+  const seg=(key)=>Object.keys(HUB).map(k=>`<button type="button" data-hub="${key}:${k}" aria-pressed="${state[key]===k}">${HUB[k].short}</button>`).join('');
+  $('#v-transporte').innerHTML=`
+  <div><h2 class="h2">Qué billete te conviene</h2><p class="lead">Ajusta tus datos y la app calcula la opción más barata con las tarifas de 2026.</p></div>
+  <div class="card">
+    <div class="field"><span>¿Por dónde llegas el sábado?</span><div class="seg" role="group" aria-label="Llegada">${seg('arrive')}</div></div>
+    <div class="field"><span>¿Por dónde sales el martes?</span><div class="seg" role="group" aria-label="Salida">${seg('depart')}</div></div>
+    <div class="field"><span>Trayectos de metro o RER por día, sin contar aeropuerto</span>
+      <div class="steps">${DAYS.map((d,i)=>`<div class="stepper" style="--dc:var(--d${i+1})"><small>${d.short}</small><div><button type="button" data-trip="${i}:-1" aria-label="Menos trayectos el ${d.dow.toLowerCase()}">−</button><output id="trip${i}">${state.trips[i]}</output><button type="button" data-trip="${i}:1" aria-label="Más trayectos el ${d.dow.toLowerCase()}">+</button></div></div>`).join('')}</div></div>
+    <div class="opts" id="fare"></div>
+    <p class="src">El plan ya viene cargado con los trayectos que necesita: casi todo se hace a pie. El pase de día compensa a partir del quinto trayecto.</p>
+  </div>
+
+  <div class="card">
+    <div class="field"><label for="hotel">Dirección o nombre de tu hotel</label><input type="text" id="hotel" autocomplete="off" placeholder="Ej.: 12 rue de Rivoli" value="${state.hotel.replace(/"/g,'&quot;')}"></div>
+    <p class="src">Con ella, los botones de ruta abren Google Maps con el trayecto exacto entre el aeropuerto y tu hotel.</p>
+  </div>
+  <div id="hubs" style="display:flex;flex-direction:column;gap:14px"></div>
+
+  <div><h2 class="h2">Billetes y pases</h2><p class="lead">Desde 2025 hay precio único en toda la región: da igual la distancia.</p></div>
+  <div class="card"><div class="tickets">
+    <div class="ticket"><b>Billete Metro-Train-RER</b><span class="p">${eur(F.metro)}</span><span class="pill ok">El que más usarás</span><p>Un trayecto en metro, RER y trenes de cercanías por toda la región, con transbordos entre ellos durante 2 h. No vale para bus ni para los aeropuertos.</p></div>
+    <div class="ticket"><b>Billete Bus-Tram</b><span class="p">${eur(F.bus)}</span><p>Un trayecto en autobús o tranvía, con transbordos entre ellos durante 1 h 30. Comprado al conductor cuesta ${eur(F.busBord)}, o ${eur(F.metro)} acercando la tarjeta bancaria, y no permite transbordo.</p></div>
+    <div class="ticket"><b>Billete Aéroports</b><span class="p">${eur(F.airport)}</span><span class="pill warn">Obligatorio en CDG y Orly</span><p>Entre cualquier estación y los aeropuertos de Charles de Gaulle (RER B) u Orly (metro 14). El billete normal no abre los tornos del aeropuerto.</p></div>
+    <div class="ticket"><b>Navigo Día (Navigo Jour)</b><span class="p">${eur(F.jour)}</span><p>Viajes ilimitados en metro, RER, bus y tranvía durante un día natural, hasta el cierre del servicio. No incluye aeropuertos. Compensa con 5 trayectos o más.</p></div>
+    <div class="ticket"><b>Paris Visite</b><span class="p">${eur(F.pv[1])}–${eur(F.pv[5])}</span><p>Pase turístico de 1, 2, 3 o 5 días seguidos (${eur(F.pv[1])}, ${eur(F.pv[2])}, ${eur(F.pv[3])} y ${eur(F.pv[5])}). Ilimitado e incluye aeropuertos y Versalles. Es personal. Cómodo, pero caro para un plan que se hace caminando.</p></div>
+    <div class="ticket"><b>Navigo Semana</b><span class="p">${eur(F.semaine)}</span><span class="pill warn">No encaja con tus fechas</span><p>De lunes a domingo, incluye aeropuertos. Se vende desde el viernes anterior hasta el jueves. Requiere tarjeta Navigo Découverte (5 € y una foto) o móvil. Solo interesa si llegas un lunes o martes.</p></div>
+    <div class="ticket"><b>Navigo Liberté+</b><span class="p">2,04 €</span><p>Contrato de pago mensual por uso. Pensado para residentes, no para una visita.</p></div>
+  </div></div>
+
+  <div><h2 class="h2">Cómo comprar y validar</h2></div>
+  <div class="card"><ol class="num-list">
+    <li><span><b>En el móvil, antes de volar.</b> Instala «Île-de-France Mobilités» o «Bonjour RATP». En iPhone (XR o posterior) también se compra desde Cartera con Apple Pay; en Android, desde Google Wallet. Valida acercando el móvil al lector del torno.</span></li>
+    <li><span><b>O con tarjeta Navigo Easy.</b> Cuesta ${eur(F.easy)} en taquillas y máquinas, no lleva foto y se recarga con billetes sueltos o pases de día. Una tarjeta por persona. Los billetes de cartón ya no se venden.</span></li>
+    <li><span><b>No mezcles billetes.</b> En un mismo soporte no pueden convivir billetes Metro-Train-RER y billetes Aéroports. La solución oficial: el del aeropuerto en el móvil y los de metro en una Navigo Easy, o dos tarjetas.</span></li>
+    <li><span><b>Valida siempre y guarda el billete.</b> En el RER también hay torno a la salida. Viajar sin billete válido son unos 70 € de multa en el acto.</span></li>
+    <li><span><b>La tarjeta bancaria todavía no abre los tornos del metro.</b> Solo se acepta sin contacto en los autobuses, en el funicular de Montmartre y en la salida de Orly.</span></li>
+  </ol></div>
+
+  <div><h2 class="h2">El metro en un minuto</h2></div>
+  <div class="card"><ul class="bul">
+    <li><b>Horario:</b> de 5:30 a 1:15; viernes, sábados y vísperas de festivo hasta las 2:15. De noche circulan los autobuses Noctilien.</li>
+    <li><b>Orientación:</b> cada andén se nombra por la estación final de la línea. Mira el número y el terminal, no el sentido.</li>
+    <li><b>Carteles:</b> «Sortie» es salida y «Correspondance» transbordo. Elige el número de salida en el plano del andén: ahorra muchos metros.</li>
+    <li><b>Puertas:</b> en algunas líneas no se abren solas. Levanta el pestillo o pulsa el botón.</li>
+    <li><b>Hora punta:</b> 8:00–9:30 y 17:30–19:30. Con maleta, evítala si puedes.</li>
+    <li><b>Escaleras mecánicas:</b> quieto a la derecha, se adelanta por la izquierda.</li>
+    <li><b>Niños:</b> gratis hasta los 4 años y mitad de precio de 4 a 9.</li>
+    <li><b>Huelgas y obras:</b> hay preavisos de huelga abiertos en RATP y SNCF hasta mediados de diciembre. Mira el estado de tus líneas la víspera en Bonjour RATP.</li>
+  </ul></div>
+
+  <div><h2 class="h2">Las líneas de tu plan</h2></div>
+  <div class="card"><ul class="lines">
+    <li>${L(1)}<span><b>El eje turístico.</b> Louvre, Tuileries, Concorde, Campos Elíseos, Arco del Triunfo, Gare de Lyon. Automática y muy frecuente.</span></li>
+    <li>${L(4)}<span><b>Norte–sur.</b> Gare du Nord, Châtelet, Cité (Notre-Dame), Saint-Michel, Saint-Germain, Montparnasse.</span></li>
+    <li>${L(6)}<span><b>La de las vistas.</b> Trocadéro, Bir-Hakeim (Torre Eiffel), Étoile. Entre Passy y Bir-Hakeim cruza el Sena al aire libre.</span></li>
+    <li>${L(12)}<span><b>Montmartre.</b> Concorde, Saint-Lazare, Trinité, Pigalle, Abbesses.</span></li>
+    <li>${L(14)}<span><b>La rápida.</b> Aeropuerto de Orly, Gare de Lyon, Châtelet, Saint-Lazare.</span></li>
+    <li>${L('B')}<span><b>Aeropuerto CDG.</b> Gare du Nord, Châtelet–Les Halles, Saint-Michel Notre-Dame.</span></li>
+    <li>${L('C')}<span><b>Orilla izquierda.</b> Torre Eiffel, Invalides, Musée d’Orsay, Saint-Michel y Versalles.</span></li>
+  </ul></div>
+  <p class="src">Tarifas de Île-de-France Mobilités vigentes desde el 1 de enero de 2026 y tarifas planas de taxi de 2026. Datos comprobados el 20 de noviembre de 2026; confirma horarios y obras antes de salir.</p>`;
+  renderFare();renderHubs();
+}
+
+/* ============ Guía ============ */
+function renderGuide(){
+  const sights=[['lv','Martes'],['or','Lunes'],['ef','Ninguno'],['sc','Ninguno'],['at','Ninguno'],['og','Ninguno'],['nd','Ninguno'],['sq','Ninguno']];
+  $('#v-guia').innerHTML=`
+  <div><h2 class="h2">Lo esencial</h2><p class="lead">París a finales de noviembre: frío, luces de Navidad y días cortos.</p></div>
+  <div class="tiles">
+    <div class="tile"><small>Temperatura</small><b>4–9 °C</b><span>Lluvia fina uno de cada dos días</span></div>
+    <div class="tile"><small>Luz de día</small><b>8:20–16:58</b><span>Lo exterior, antes de las 17:00</span></div>
+    <div class="tile"><small>Emergencias</small><b>112</b><span>Policía 17 · Médicas 15 · Bomberos 18</span></div>
+    <div class="tile"><small>Propina</small><b>Incluida</b><span>«Service compris». Redondear es un detalle</span></div>
+    <div class="tile"><small>Enchufe</small><b>Tipo E · 230 V</b><span>El europeo de dos clavijas sirve</span></div>
+    <div class="tile"><small>Agua</small><b>Del grifo</b><span>Potable y gratis en restaurantes</span></div>
+  </div>
+
+  <div><h2 class="h2">Entradas y días de cierre</h2></div>
+  <div class="card"><div class="tw"><table>
+    <thead><tr><th>Lugar</th><th>Precio adulto</th><th>Cierra</th></tr></thead>
+    <tbody>${sights.map(([k,c])=>`<tr><td><b>${P[k].n}</b></td><td>${P[k].pr}</td><td class="n">${c}</td></tr>`).join('')}</tbody>
+  </table></div>
+  <div class="note"><b>Gratis si eres joven.</b> Menores de 18 años de cualquier país y residentes de la UE menores de 26 entran gratis en el Louvre, Orsay, Sainte-Chapelle y el Arco del Triunfo. Lleva el DNI y reserva igualmente la franja horaria a 0 €.</div>
+  <p class="tip"><b>¿Paris Museum Pass?</b> El de 2 días ronda los 85 € y cubre 48 horas seguidas: justo de la Sainte-Chapelle del sábado al Louvre del lunes por la mañana, con Orsay y el Arco entre medias. Esas cuatro entradas sueltas suman 70 € si resides en el EEE, así que no compensa. Con pasaporte de fuera del EEE suman 86 €: queda empatado y el pase añade gratis el Panteón o la Conciergerie. La Torre Eiffel, la Ópera y el crucero nunca están incluidos.</p>
+  <p class="src">Precios de 2026 consultados el 20 de noviembre de 2026. Las huelgas pueden cerrar un monumento sin aviso: revisa su web esa misma mañana.</p></div>
+
+  <div><h2 class="h2">Presupuesto orientativo</h2><p class="lead">Por persona, sin vuelos ni hotel.</p></div>
+  <div class="card"><div class="tw"><table>
+    <tbody>
+      <tr><td><b>Transporte</b><br><span class="src">Aeropuerto ida y vuelta + 8 trayectos</span></td><td class="n">≈ ${eur(2*F.airport+8*F.metro)}</td></tr>
+      <tr><td><b>Entradas</b><br><span class="src">Torre, Louvre, Orsay, Sainte-Chapelle, Arco, Ópera, crucero</span></td><td class="n">125–165 €</td></tr>
+      <tr><td><b>Comida</b><br><span class="src">Panadería, almuerzo sencillo y cena de bistró</span></td><td class="n">45–65 € al día</td></tr>
+      <tr><td><b>Total 4 días</b></td><td class="n"><b>335–445 €</b></td></tr>
+    </tbody></table></div></div>
+
+  <div><h2 class="h2">Comer bien sin arruinarse</h2></div>
+  <div class="card"><ul class="bul">
+    <li><b>Horarios:</b> almuerzo de 12:00 a 14:00 y cena de 19:00 a 22:00. Fuera de esas horas busca una «brasserie» con «service continu».</li>
+    <li><b>Formule midi:</b> plato con entrante o postre por 16–22 €, de lunes a viernes. Es la mejor relación calidad-precio.</li>
+    <li><b>Panaderías:</b> bocadillo jambon-beurre 5–6 €, quiche 4 €, menú con bebida y postre 9–11 €.</li>
+    <li><b>Agua y pan:</b> pide «une carafe d’eau». El agua del grifo y el pan son gratis siempre.</li>
+    <li><b>Café:</b> en la barra cuesta 1,50–2 €; el mismo café sentado en terraza, 3–5 €.</li>
+    <li><b>Qué probar:</b> soupe à l’oignon, croque-monsieur, confit de canard, steak-frites, bœuf bourguignon, crêpe de mantequilla y azúcar, macarons y, en esta época, vin chaud.</li>
+    <li><b>Domingo y lunes:</b> cierran muchos restaurantes. Ten localizado dónde vas a cenar.</li>
+  </ul></div>
+
+  <div><h2 class="h2">Francés de supervivencia</h2><p class="lead">Saluda siempre con «Bonjour» al entrar en cualquier sitio. Cambia por completo el trato.</p></div>
+  <div class="card"><div class="phr">
+    ${[['Bonjour / Bonsoir','bon-YUR / bon-SUAR','Buenos días / Buenas tardes'],['Merci beaucoup','mer-SÍ bo-KÚ','Muchas gracias'],['S’il vous plaît','sil vu PLE','Por favor'],['Excusez-moi','ex-kü-sé MUÁ','Perdone'],['Parlez-vous espagnol ?','par-lé VU es-pa-ÑOL','¿Habla español?'],['Je voudrais…','ye vu-DRE','Quisiera…'],['L’addition, s’il vous plaît','la-di-SIÓN','La cuenta, por favor'],['Une carafe d’eau','ün ka-RAF DO','Una jarra de agua'],['Où est le métro ?','u E le me-TRÓ','¿Dónde está el metro?'],['Un billet, s’il vous plaît','an bi-YÉ','Un billete, por favor'],['C’est combien ?','se kom-BIÁN','¿Cuánto cuesta?'],['Je ne comprends pas','ye ne kom-PRAN pa','No entiendo']].map(r=>`<div><b>${r[0]}</b><i>${r[1]}</i></div><div>${r[2]}</div>`).join('')}
+  </div></div>
+
+  <div><h2 class="h2">Seguridad y timos habituales</h2></div>
+  <div class="card"><ul class="bul">
+    <li><b>Carteristas:</b> actúan en el metro 1, el RER B, la Torre Eiffel, el Louvre y Montmartre. Móvil fuera del bolsillo trasero y bolso cerrado por delante, sobre todo al cerrarse las puertas del vagón.</li>
+    <li><b>La pulsera:</b> en la escalinata del Sacré-Cœur te atan un hilo a la muñeca y exigen dinero. Manos en los bolsillos y sigue andando.</li>
+    <li><b>La petición de firmas:</b> jóvenes con una carpeta piden firmar por una causa y luego dinero, o distraen mientras otro roba. Di «non, merci» sin pararte.</li>
+    <li><b>El anillo de oro:</b> alguien «encuentra» un anillo a tus pies y te lo ofrece a cambio de una propina. No vale nada.</li>
+    <li><b>Trileros:</b> el juego de los cubiletes bajo la Torre Eiffel está amañado y los que ganan son cómplices.</li>
+    <li><b>Taxis:</b> solo los de la fila oficial, con luz «Taxi Parisien» en el techo y tarifa plana desde los aeropuertos.</li>
+    <li><b>Terrazas:</b> no dejes el móvil sobre la mesa.</li>
+  </ul></div>
+
+  <div><h2 class="h2">Si llueve</h2></div>
+  <div class="card"><ul class="bul">
+    <li>Los museos del plan ya son a cubierto. Adelanta la Ópera Garnier y las Galeries Lafayette.</li>
+    <li>Pasajes cubiertos encadenados: Galerie Vivienne, Passage des Panoramas, Passage Jouffroy y Passage Verdeau.</li>
+    <li>Panteón (${L('B')} Luxembourg): tumbas de Victor Hugo y Marie Curie y el péndulo de Foucault.</li>
+    <li>Musée de l’Orangerie, en las Tullerías: los Nenúfares de Monet en dos salas ovaladas. Cierra los martes.</li>
+    <li>Un chocolate caliente espeso en un salón de té también cuenta como visita.</li>
+  </ul></div>
+
+  <div><h2 class="h2">Costumbres que ayudan</h2></div>
+  <div class="card"><ul class="bul">
+    <li>Los aseos públicos de la calle (cabinas grises) son gratuitos. En cafés, consume algo antes de pedir el baño.</li>
+    <li>Los domingos cierra buena parte del comercio, salvo Le Marais, Campos Elíseos, Montmartre y los grandes almacenes.</li>
+    <li>En los museos hay control de bolsos: viaja sin mochila grande y pasarás antes. Las maletas no se admiten.</li>
+    <li>Las farmacias llevan una cruz verde luminosa. Para algo leve, el farmacéutico aconseja sin receta.</li>
+  </ul></div>
+
+  <div><h2 class="h2">Aplicaciones útiles</h2></div>
+  <div class="card"><ul class="bul">
+    <li><b>Île-de-France Mobilités:</b> billetes en el móvil y rutas oficiales.</li>
+    <li><b>Bonjour RATP:</b> horarios en tiempo real y avisos de incidencias.</li>
+    <li><b>Citymapper:</b> la mejor para elegir vagón y salida en cada transbordo.</li>
+    <li><b>Google Maps sin conexión:</b> descarga la ciudad antes de salir.</li>
+    <li><b>TheFork:</b> reservas de restaurante con descuentos.</li>
+  </ul></div>`;
+}
+
+/* ============ Listas ============ */
+function renderLists(){
+  const done=LISTS.reduce((a,g)=>a+g.items.filter(i=>state.lists[i.id]).length,0);
+  $('#v-listas').innerHTML=`
+  <div><h2 class="h2">Preparativos</h2><p class="lead">${done} de ${LTOTAL} listos. Marca cada cosa cuando la tengas.</p></div>
+  ${LISTS.map(g=>`<div class="card"><div class="ghead"><h3 class="h3">${g.t}</h3><span>${g.items.filter(i=>state.lists[i.id]).length}/${g.items.length}</span></div>${g.d?`<p class="lead">${g.d}</p>`:''}
+    <div class="cl">${g.items.map(i=>`<label><input type="checkbox" id="cl-${i.id}" data-list="${i.id}"${state.lists[i.id]?' checked':''}><span><b>${i.b}</b>${i.s?`<small>${i.s}</small>`:''}${i.u?` <a href="${i.u}" target="_blank" rel="noopener">Abrir web oficial</a>`:''}</span></label>`).join('')}</div></div>`).join('')}
+  <div class="card"><p class="src" id="sync"></p>
+    <div class="acts">${ui.confirmReset?`<button type="button" class="btn pri" data-reset="yes">Sí, borrar todas mis marcas</button><button type="button" class="btn" data-reset="no">Cancelar</button>`:`<button type="button" class="btn" data-reset="ask">Borrar todas mis marcas</button>`}</div></div>`;
+  syncNote();
+}
+
+/* ============ Navegación y eventos ============ */
+const TABS=['plan','mapa','transporte','guia','listas'];
+function show(tab){
+  const main=$('#main');ui.scroll[ui.tab]=main.scrollTop;ui.tab=tab;
+  TABS.forEach(t=>{$('#v-'+t).hidden=t!==tab;});
+  $$('.tabs a').forEach(a=>{if(a.dataset.tab===tab)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current');});
+  closeSheet();
+  if(tab==='mapa') renderMapUI();
+  main.scrollTop=ui.scroll[tab]||0;
+}
+function route(){const h=location.hash.slice(1),t=TABS.includes(h)?h:'plan';if(t!==ui.tab||!$('.tabs a[aria-current]'))show(t);}
+function renderAll(){renderStatus();renderPlan();renderTransport();renderGuide();renderLists();if(ui.tab==='mapa')renderMapUI();}
+
+document.addEventListener('click',e=>{
+  const t=e.target.closest('[data-check],[data-day],[data-map],[data-mapday],[data-poi],[data-close],[data-zoom],[data-hub],[data-trip],[data-reset]');
+  if(!t) return;
+  const d=t.dataset;
+  if(d.check){state.checks[d.check]=!state.checks[d.check];if(!state.checks[d.check])delete state.checks[d.check];save();renderStatus();renderPlan();const b=$(`[data-check="${d.check}"]`);if(b)b.focus({preventScroll:true});}
+  else if(d.day!==undefined){ui.day=+d.day;renderPlan();$('#main').scrollTop=0;}
+  else if(d.map){ui.mapDay=DAYS.findIndex(x=>x.stops.some(s=>s.p===d.map));ui.mv=null;location.hash='mapa';if(ui.tab!=='mapa')show('mapa');else renderMapUI();openSheet(d.map);}
+  else if(d.mapday!==undefined){ui.mapDay=d.mapday==='all'?'all':+d.mapday;ui.mv=null;closeSheet();renderMapUI();}
+  else if(d.poi&&t.closest('#map-legend')){const p=P[d.poi],[x,y]=XY(p.lat,p.lon);ui.mv={cx:x,cy:y,w:Math.min(ui.mv?ui.mv.w:2200,2200)};renderMap();$('#main').scrollTop=0;openSheet(d.poi);}
+  else if(d.close!==undefined){closeSheet();}
+  else if(d.zoom){if(d.zoom==='fit')ui.mv=null;else if(ui.mv)ui.mv.w*=d.zoom==='in'?0.650:1.540;renderMap();}
+  else if(d.hub){const [k,v]=d.hub.split(':');state[k]=v;save();renderTransport();renderPlan();}
+  else if(d.trip){const [i,n]=d.trip.split(':').map(Number);state.trips[i]=Math.max(0,Math.min(12,state.trips[i]+n));save();$('#trip'+i).textContent=state.trips[i];renderFare();}
+  else if(d.reset){if(d.reset==='ask')ui.confirmReset=true;else{if(d.reset==='yes'){state.checks={};state.lists={};save();}ui.confirmReset=false;}renderStatus();renderPlan();renderLists();}
+});
+document.addEventListener('change',e=>{
+  const t=e.target;
+  if(t.dataset&&t.dataset.list){if(t.checked)state.lists[t.dataset.list]=true;else delete state.lists[t.dataset.list];save();renderLists();const b=$('#cl-'+t.dataset.list);if(b)b.focus({preventScroll:true});}
+  else if(t.id==='hotel'){state.hotel=t.value.trim().slice(0,120);save();renderHubs();renderPlan();}
+});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeSheet();});
+window.addEventListener('hashchange',route);
+
+renderAll();route();cloudInit();
+
+/* Instalable y sin conexión cuando se aloja como web propia (fuera de un marco) */
+if(window.top===window.self&&'serviceWorker' in navigator&&location.protocol==='https:'){
+  const l=document.createElement('link');l.rel='manifest';l.href='manifest.webmanifest';document.head.appendChild(l);
+  navigator.serviceWorker.register('sw.js').catch(()=>{});
+}
+</script>
+</body>
+</html>
